@@ -1,0 +1,944 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Models\JamaahModel;
+use App\Models\UserModel;
+use App\Models\PaketModel;
+
+class Jamaah extends BaseController
+{
+    protected $jamaahModel;
+    protected $userModel;
+    protected $paketModel;
+    protected $pendaftaranModel;
+    protected $detailPendaftaranModel;
+    protected $pembayaranModel;
+    protected $dokumenModel;
+    protected $validation;
+    protected $session;
+
+    public function __construct()
+    {
+        $this->jamaahModel = new JamaahModel();
+        $this->userModel = new UserModel();
+        $this->paketModel = new PaketModel();
+        $this->pendaftaranModel = new \App\Models\PendaftaranModel();
+        $this->detailPendaftaranModel = new \App\Models\DetailPendaftaranModel();
+        $this->pembayaranModel = new \App\Models\PembayaranModel();
+        $this->dokumenModel = new \App\Models\DokumenModel();
+        $this->validation = \Config\Services::validation();
+        $this->session = session();
+    }
+
+    public function index()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            // Simpan halaman yang ingin diakses
+            $this->session->set('last_page', current_url());
+            return redirect()->to('auth');
+        }
+
+        // Ambil rekomendasi paket
+        $paketRekomendasi = $this->paketModel->where('status', 1)->orderBy('created_at', 'DESC')->limit(3)->find();
+
+        return view('jamaah/dashboard', [
+            'title' => 'Dashboard Jamaah',
+            'paketRekomendasi' => $paketRekomendasi
+        ]);
+    }
+
+    public function profile()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            // Simpan halaman yang ingin diakses
+            $this->session->set('last_page', current_url());
+            return redirect()->to('auth');
+        }
+
+        $userId = $this->session->get('id');
+        $user = $this->userModel->find($userId);
+        $jamaah = $this->jamaahModel->getJamaahByUserId($userId);
+
+        return view('jamaah/profile', [
+            'title' => 'Profil Jamaah',
+            'user' => $user,
+            'jamaah' => $jamaah
+        ]);
+    }
+
+    public function updateProfile()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $rules = [
+            'nama' => 'required',
+            'email' => 'required|valid_email',
+            'nik' => 'required|numeric|min_length[16]|max_length[16]',
+            'jenkel' => 'required|in_list[L,P]',
+            'alamat' => 'required',
+            'nohpjamaah' => 'required|numeric'
+        ];
+
+        $messages = [
+            'nama' => [
+                'required' => 'Nama lengkap harus diisi'
+            ],
+            'email' => [
+                'required' => 'Email harus diisi',
+                'valid_email' => 'Format email tidak valid'
+            ],
+            'nik' => [
+                'required' => 'NIK harus diisi',
+                'numeric' => 'NIK harus berupa angka',
+                'min_length' => 'NIK harus 16 digit',
+                'max_length' => 'NIK harus 16 digit'
+            ],
+            'jenkel' => [
+                'required' => 'Jenis kelamin harus dipilih',
+                'in_list' => 'Jenis kelamin tidak valid'
+            ],
+            'alamat' => [
+                'required' => 'Alamat harus diisi'
+            ],
+            'nohpjamaah' => [
+                'required' => 'Nomor HP harus diisi',
+                'numeric' => 'Nomor HP harus berupa angka'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => $this->validator->getErrors()
+            ]);
+        }
+
+        $userId = $this->session->get('id');
+        $user = $this->userModel->find($userId);
+        $jamaah = $this->jamaahModel->getJamaahByUserId($userId);
+
+        // Update data user
+        $this->userModel->update($userId, [
+            'nama' => $this->request->getPost('nama'),
+            'email' => $this->request->getPost('email')
+        ]);
+
+        // Update data jamaah
+        $this->jamaahModel->update($jamaah['idjamaah'], [
+            'nik' => $this->request->getPost('nik'),
+            'namajamaah' => $this->request->getPost('nama'),
+            'jenkel' => $this->request->getPost('jenkel'),
+            'alamat' => $this->request->getPost('alamat'),
+            'emailjamaah' => $this->request->getPost('email'),
+            'nohpjamaah' => $this->request->getPost('nohpjamaah')
+        ]);
+
+        // Update session data
+        $this->session->set('nama', $this->request->getPost('nama'));
+        $this->session->set('email', $this->request->getPost('email'));
+
+        return $this->response->setJSON([
+            'status' => true,
+            'message' => 'Profil berhasil diperbarui'
+        ]);
+    }
+
+    public function changePassword()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $rules = [
+            'current_password' => 'required',
+            'new_password' => 'required|min_length[6]',
+            'confirm_password' => 'required|matches[new_password]'
+        ];
+
+        $messages = [
+            'current_password' => [
+                'required' => 'Password saat ini harus diisi'
+            ],
+            'new_password' => [
+                'required' => 'Password baru harus diisi',
+                'min_length' => 'Password baru minimal 6 karakter'
+            ],
+            'confirm_password' => [
+                'required' => 'Konfirmasi password harus diisi',
+                'matches' => 'Konfirmasi password tidak sesuai dengan password baru'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => $this->validator->getErrors()
+            ]);
+        }
+
+        $userId = $this->session->get('id');
+        $user = $this->userModel->find($userId);
+
+        // Verifikasi password saat ini
+        if (!password_verify($this->request->getPost('current_password'), $user['password'])) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => [
+                    'current_password' => 'Password saat ini salah'
+                ]
+            ]);
+        }
+
+        // Update password
+        $this->userModel->update($userId, [
+            'password' => password_hash($this->request->getPost('new_password'), PASSWORD_DEFAULT)
+        ]);
+
+        return $this->response->setJSON([
+            'status' => true,
+            'message' => 'Password berhasil diperbarui'
+        ]);
+    }
+
+    public function orders()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            // Simpan halaman yang ingin diakses
+            $this->session->set('last_page', current_url());
+            return redirect()->to('auth');
+        }
+
+        return view('jamaah/orders/index', [
+            'title' => 'Daftar Pemesanan'
+        ]);
+    }
+
+    public function paket()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            // Simpan halaman yang ingin diakses
+            $this->session->set('last_page', current_url());
+            return redirect()->to('auth');
+        }
+
+        // Ambil semua paket aktif
+        $paket = $this->paketModel->getActivePaket();
+        $kategori = (new \App\Models\KategoriModel())->findAll();
+
+        return view('jamaah/paket/index', [
+            'title' => 'Daftar Paket',
+            'paket' => $paket,
+            'kategori' => $kategori
+        ]);
+    }
+
+    public function paketDetail($idpaket)
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            // Simpan halaman yang ingin diakses
+            $this->session->set('last_page', current_url());
+            return redirect()->to('auth');
+        }
+
+        // Ambil detail paket
+        $paket = $this->paketModel->getPaketDetail($idpaket);
+
+        if (!$paket) {
+            return redirect()->to('jamaah/paket')->with('error', 'Paket tidak ditemukan');
+        }
+
+        return view('jamaah/paket/detail', [
+            'title' => 'Detail Paket',
+            'paket' => $paket
+        ]);
+    }
+
+    public function newOrder()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            // Simpan halaman yang ingin diakses
+            $this->session->set('last_page', current_url());
+            return redirect()->to('auth');
+        }
+
+        $paketId = $this->request->getGet('paket_id');
+
+        if ($paketId) {
+            // Jika ada paket_id, ambil data paket tersebut dengan detail
+            $paketDetail = $this->paketModel->getPaketDetail($paketId);
+
+            if ($paketDetail) {
+                $paket = [$paketDetail]; // Ubah ke format array untuk konsistensi dengan view
+            } else {
+                $paket = [];
+            }
+        } else {
+            // Jika tidak ada paket_id, ambil semua paket aktif dengan detail
+            $paket = $this->paketModel->getActivePaket();
+        }
+
+        return view('jamaah/orders/new', [
+            'title' => 'Buat Pemesanan Baru',
+            'paket' => $paket
+        ]);
+    }
+
+    public function daftar($idpaket = null)
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            // Simpan halaman yang ingin diakses
+            $this->session->set('last_page', current_url());
+            return redirect()->to('auth');
+        }
+
+        if (!$idpaket) {
+            return redirect()->to('jamaah/paket');
+        }
+
+        $paket = $this->paketModel->getPaketDetail($idpaket);
+        if (!$paket) {
+            return redirect()->to('jamaah/paket')->with('error', 'Paket tidak ditemukan');
+        }
+
+        $userId = $this->session->get('id');
+        $jamaah = $this->jamaahModel->getJamaahByUserId($userId);
+
+        // Daftar dokumen yang diperlukan
+        $requiredDocs = [
+            'KTP' => 'Kartu Tanda Penduduk',
+            'KK' => 'Kartu Keluarga',
+            'PASPOR' => 'Paspor',
+            'FOTO' => 'Pas Foto 4x6 (Latar Belakang Putih)',
+            'AKTELAHIR' => 'Akta Kelahiran',
+            'BUKUNIKAH' => 'Buku Nikah (Jika Sudah Menikah)'
+        ];
+
+        return view('jamaah/orders/daftar', [
+            'title' => 'Pendaftaran Paket',
+            'paket' => $paket,
+            'jamaah' => $jamaah,
+            'requiredDocs' => $requiredDocs
+        ]);
+    }
+
+    public function savePendaftaran()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $rules = [
+            'paket_id' => 'required',
+            'total_bayar' => 'required|numeric',
+            'uang_muka' => 'required|numeric',
+            'jamaah_count' => 'required|numeric|greater_than[0]',
+            'jamaah_ids.*' => 'required'
+        ];
+
+        $messages = [
+            'paket_id' => [
+                'required' => 'Paket harus dipilih'
+            ],
+            'total_bayar' => [
+                'required' => 'Total bayar harus diisi',
+                'numeric' => 'Total bayar harus berupa angka'
+            ],
+            'uang_muka' => [
+                'required' => 'Uang muka harus diisi',
+                'numeric' => 'Uang muka harus berupa angka'
+            ],
+            'jamaah_count' => [
+                'required' => 'Jumlah jamaah harus diisi',
+                'numeric' => 'Jumlah jamaah harus berupa angka',
+                'greater_than' => 'Jumlah jamaah minimal 1 orang'
+            ],
+            'jamaah_ids.*' => [
+                'required' => 'ID jamaah harus diisi'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => $this->validator->getErrors()
+            ]);
+        }
+
+        $userId = $this->session->get('id');
+        $paketId = $this->request->getPost('paket_id');
+        $totalBayar = $this->request->getPost('total_bayar');
+        $uangMuka = $this->request->getPost('uang_muka');
+        $sisaBayar = $totalBayar - $uangMuka;
+        $jamaahIds = $this->request->getPost('jamaah_ids');
+        $jamaahCount = count($jamaahIds);
+
+        // Cek kuota paket
+        $paket = $this->paketModel->find($paketId);
+        if (!$paket || $paket['kuota'] < $jamaahCount) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Kuota paket tidak mencukupi'
+            ]);
+        }
+
+        // Kurangi kuota paket
+        $this->paketModel->reduceQuota($paketId, $jamaahCount);
+
+        // Buat ID pendaftaran baru
+        $idPendaftaran = $this->pendaftaranModel->getNewId();
+
+        // Set waktu expired (15 menit dari sekarang) dengan format yang benar
+        $now = new \DateTime('now', new \DateTimeZone('Asia/Jakarta'));
+        $expiredAt = $now->modify('+15 minutes')->format('Y-m-d H:i:s');
+
+        // Simpan data pendaftaran
+        $dataPendaftaran = [
+            'idpendaftaran' => $idPendaftaran,
+            'iduser' => $userId,
+            'paketid' => $paketId,
+            'tanggaldaftar' => date('Y-m-d'),
+            'totalbayar' => $totalBayar,
+            'sisabayar' => $sisaBayar,
+            'status' => 'pending',
+            'expired_at' => $expiredAt
+        ];
+
+        $this->pendaftaranModel->insert($dataPendaftaran);
+
+        // Simpan detail pendaftaran untuk setiap jamaah
+        foreach ($jamaahIds as $jamaahId) {
+            $dataDetail = [
+                'idpendaftaran' => $idPendaftaran,
+                'jamaahid' => $jamaahId
+            ];
+            $this->detailPendaftaranModel->simpan($dataDetail);
+        }
+
+        // Jika ada uang muka, simpan data pembayaran
+        if ($uangMuka > 0) {
+            $idPembayaran = $this->pembayaranModel->getNewId();
+
+            $dataPembayaran = [
+                'idpembayaran' => $idPembayaran,
+                'pendaftaranid' => $idPendaftaran,
+                'tanggalbayar' => date('Y-m-d'),
+                'metodepembayaran' => 'Transfer Bank',
+                'tipepembayaran' => 'Uang Muka',
+                'jumlahbayar' => $uangMuka,
+                'statuspembayaran' => false // Belum dikonfirmasi
+            ];
+
+            $this->pembayaranModel->simpan($dataPembayaran);
+        }
+
+        // Kirim data ke WebSocket untuk pembaruan realtime
+        $this->sendToWebSocket([
+            'type' => 'new_pendaftaran',
+            'pendaftaran_id' => $idPendaftaran,
+            'expired_at' => $expiredAt,
+            'status' => 'pending'
+        ]);
+
+        return $this->response->setJSON([
+            'status' => true,
+            'message' => 'Pendaftaran berhasil disimpan',
+            'redirect' => base_url('jamaah/pembayaran/' . $idPendaftaran)
+        ]);
+    }
+
+    public function pembayaran($idpendaftaran = null)
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return redirect()->to('auth');
+        }
+
+        if (!$idpendaftaran) {
+            return redirect()->to('jamaah/orders');
+        }
+
+        $userId = $this->session->get('id');
+        $pendaftaran = $this->pendaftaranModel->getPendaftaranDetail($idpendaftaran);
+
+        // Pastikan pendaftaran milik user yang sedang login
+        if (!$pendaftaran || $pendaftaran['iduser'] != $userId) {
+            return redirect()->to('jamaah/orders')->with('error', 'Data pendaftaran tidak ditemukan');
+        }
+
+        // Format waktu expired_at untuk JavaScript jika status pending
+        if (isset($pendaftaran['status']) && $pendaftaran['status'] === 'pending' && isset($pendaftaran['expired_at'])) {
+            // Pastikan format waktu sesuai dengan yang diharapkan oleh JavaScript
+            $expiredAt = new \DateTime($pendaftaran['expired_at'], new \DateTimeZone('Asia/Jakarta'));
+            $pendaftaran['expired_at'] = $expiredAt->format('Y-m-d H:i:s');
+        }
+
+        $pembayaran = $this->pembayaranModel->getPembayaranByPendaftaranId($idpendaftaran);
+
+        return view('jamaah/orders/pembayaran', [
+            'title' => 'Pembayaran',
+            'pendaftaran' => $pendaftaran,
+            'pembayaran' => $pembayaran
+        ]);
+    }
+
+    public function savePembayaran()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $rules = [
+            'pendaftaran_id' => 'required',
+            'metode_pembayaran' => 'required',
+            'jumlah_bayar_raw' => 'required|numeric',
+            'bukti_bayar' => 'uploaded[bukti_bayar]|mime_in[bukti_bayar,image/jpg,image/jpeg,image/png]|max_size[bukti_bayar,2048]'
+        ];
+
+        $messages = [
+            'pendaftaran_id' => [
+                'required' => 'ID Pendaftaran harus diisi'
+            ],
+            'metode_pembayaran' => [
+                'required' => 'Metode pembayaran harus dipilih'
+            ],
+            'jumlah_bayar' => [
+                'required' => 'Jumlah bayar harus diisi',
+                'numeric' => 'Jumlah bayar harus berupa angka'
+            ],
+            'bukti_bayar' => [
+                'uploaded' => 'Bukti pembayaran harus diupload',
+                'mime_in' => 'Format file harus JPG, JPEG, atau PNG',
+                'max_size' => 'Ukuran file maksimal 2MB'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => $this->validator->getErrors()
+            ]);
+        }
+
+        $pendaftaranId = $this->request->getPost('pendaftaran_id');
+        $metodePembayaran = $this->request->getPost('metode_pembayaran');
+        $jumlahBayar = $this->request->getPost('jumlah_bayar'); // Menggunakan nilai raw
+
+        // Upload bukti pembayaran
+        $bukti = $this->request->getFile('bukti_bayar');
+        $namaFile = $bukti->getRandomName();
+        $bukti->move(ROOTPATH . 'public/uploads/pembayaran', $namaFile);
+
+        // Buat ID pembayaran baru
+        $idPembayaran = $this->pembayaranModel->getNewId();
+
+        // Simpan data pembayaran
+        $dataPembayaran = [
+            'idpembayaran' => $idPembayaran,
+            'pendaftaranid' => $pendaftaranId,
+            'tanggalbayar' => date('Y-m-d'),
+            'metodepembayaran' => $metodePembayaran,
+            'tipepembayaran' => 'Cicilan',
+            'jumlahbayar' => $jumlahBayar,
+            'buktibayar' => $namaFile,
+            'statuspembayaran' => false // Belum dikonfirmasi
+        ];
+
+        $this->pembayaranModel->simpan($dataPembayaran);
+
+        // Update sisa bayar di pendaftaran
+        $pendaftaran = $this->pendaftaranModel->find($pendaftaranId);
+        $sisaBayar = $pendaftaran['sisabayar'] - $jumlahBayar;
+
+        $this->pendaftaranModel->update($pendaftaranId, [
+            'sisabayar' => $sisaBayar
+        ]);
+
+        return $this->response->setJSON([
+            'status' => true,
+            'message' => 'Pembayaran berhasil disimpan',
+            'redirect' => base_url('jamaah/orders')
+        ]);
+    }
+
+    public function tambahJamaah()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $rules = [
+            'nik' => 'required|numeric|min_length[16]|max_length[16]',
+            'nama' => 'required',
+            'jenkel' => 'required|in_list[L,P]',
+            'alamat' => 'required',
+            'nohp' => 'required|numeric'
+        ];
+
+        $messages = [
+            'nik' => [
+                'required' => 'NIK harus diisi',
+                'numeric' => 'NIK harus berupa angka',
+                'min_length' => 'NIK harus 16 digit',
+                'max_length' => 'NIK harus 16 digit'
+            ],
+            'nama' => [
+                'required' => 'Nama lengkap harus diisi'
+            ],
+            'jenkel' => [
+                'required' => 'Jenis kelamin harus dipilih',
+                'in_list' => 'Jenis kelamin tidak valid'
+            ],
+            'alamat' => [
+                'required' => 'Alamat harus diisi'
+            ],
+            'nohp' => [
+                'required' => 'Nomor HP harus diisi',
+                'numeric' => 'Nomor HP harus berupa angka'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => $this->validator->getErrors()
+            ]);
+        }
+
+        $userId = $this->session->get('id');
+
+        // Generate ID jamaah baru
+        $idJamaah = $this->jamaahModel->getNewId();
+
+        // Simpan data jamaah baru
+        $dataJamaah = [
+            'idjamaah' => $idJamaah,
+            'userid' => $userId,
+            'nik' => $this->request->getPost('nik'),
+            'namajamaah' => $this->request->getPost('nama'),
+            'jenkel' => $this->request->getPost('jenkel'),
+            'alamat' => $this->request->getPost('alamat'),
+            'nohpjamaah' => $this->request->getPost('nohp'),
+            'emailjamaah' => $this->request->getPost('email') ?? null,
+            'status' => true
+        ];
+
+        $this->jamaahModel->insert($dataJamaah);
+
+        // Upload dokumen jamaah jika ada
+        $dokumenFiles = $this->request->getFiles();
+        if (!empty($dokumenFiles) && isset($dokumenFiles['dokumen'])) {
+            foreach ($dokumenFiles['dokumen'] as $namaDokumen => $file) {
+                if ($file->isValid() && !$file->hasMoved()) {
+                    $newName = $file->getRandomName();
+                    $file->move(ROOTPATH . 'public/uploads/dokumen', $newName);
+
+                    $dataDokumen = [
+                        'idjamaah' => $idJamaah,
+                        'namadokumen' => $namaDokumen,
+                        'file' => $newName
+                    ];
+
+                    $this->dokumenModel->simpan($dataDokumen);
+                }
+            }
+        }
+
+        $jamaah = $this->jamaahModel->find($idJamaah);
+
+        return $this->response->setJSON([
+            'status' => true,
+            'message' => 'Data jamaah berhasil ditambahkan',
+            'jamaah' => $jamaah
+        ]);
+    }
+
+    public function uploadDokumen()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $rules = [
+            'jamaah_id' => 'required',
+            'nama_dokumen' => 'required',
+            'file' => 'uploaded[file]|max_size[file,2048]|mime_in[file,image/jpg,image/jpeg,image/png,application/pdf]'
+        ];
+
+        $messages = [
+            'jamaah_id' => [
+                'required' => 'ID jamaah harus diisi'
+            ],
+            'nama_dokumen' => [
+                'required' => 'Nama dokumen harus diisi'
+            ],
+            'file' => [
+                'uploaded' => 'File dokumen harus diupload',
+                'max_size' => 'Ukuran file maksimal 2MB',
+                'mime_in' => 'Format file harus JPG, JPEG, PNG, atau PDF'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => $this->validator->getErrors()
+            ]);
+        }
+
+        $jamaahId = $this->request->getPost('jamaah_id');
+        $namaDokumen = $this->request->getPost('nama_dokumen');
+        $file = $this->request->getFile('file');
+
+        if ($file->isValid() && !$file->hasMoved()) {
+            $newName = $file->getRandomName();
+            $file->move(ROOTPATH . 'public/uploads/dokumen', $newName);
+
+            $dataDokumen = [
+                'idjamaah' => $jamaahId,
+                'namadokumen' => $namaDokumen,
+                'file' => $newName
+            ];
+
+            $this->dokumenModel->simpan($dataDokumen);
+
+            return $this->response->setJSON([
+                'status' => true,
+                'message' => 'Dokumen berhasil diupload',
+                'file' => [
+                    'name' => $newName,
+                    'url' => base_url('uploads/dokumen/' . $newName)
+                ]
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status' => false,
+            'message' => 'Gagal mengupload dokumen'
+        ]);
+    }
+
+    public function getDokumen($jamaahId)
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $dokumen = $this->dokumenModel->getDokumenByJamaahId($jamaahId);
+
+        return $this->response->setJSON([
+            'status' => true,
+            'data' => $dokumen
+        ]);
+    }
+
+    public function dokumen()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            // Simpan halaman yang ingin diakses
+            $this->session->set('last_page', current_url());
+            return redirect()->to('auth');
+        }
+
+        $userId = $this->session->get('id');
+
+        // Ambil semua jamaah yang terkait dengan user ini
+        $jamaahList = $this->jamaahModel->where('userid', $userId)->findAll();
+
+        return view('jamaah/dokumen', [
+            'title' => 'Dokumen Jamaah',
+            'jamaahList' => $jamaahList
+        ]);
+    }
+
+    /**
+     * Memeriksa pendaftaran yang pending
+     */
+    public function checkPendingPendaftaran()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $userId = $this->session->get('id');
+
+        // Dapatkan waktu sekarang dengan zona waktu yang benar
+        $now = new \DateTime('now', new \DateTimeZone('Asia/Jakarta'));
+        $currentTime = $now->format('Y-m-d H:i:s');
+
+        // Ambil pendaftaran yang pending
+        $pendingPendaftaran = $this->pendaftaranModel->where('iduser', $userId)
+            ->where('status', 'pending')
+            ->where('expired_at >', $currentTime)
+            ->findAll();
+
+        // Format waktu expired_at untuk JavaScript
+        foreach ($pendingPendaftaran as &$pendaftaran) {
+            // Pastikan format waktu sesuai dengan yang diharapkan oleh JavaScript
+            $expiredAt = new \DateTime($pendaftaran['expired_at'], new \DateTimeZone('Asia/Jakarta'));
+            $pendaftaran['expired_at_formatted'] = $expiredAt->format('Y-m-d H:i:s');
+        }
+
+        return $this->response->setJSON([
+            'status' => true,
+            'count' => count($pendingPendaftaran),
+            'pendaftaran' => $pendingPendaftaran
+        ]);
+    }
+
+    /**
+     * Update status pendaftaran
+     * 
+     * @param string $idpendaftaran ID Pendaftaran
+     * @return \CodeIgniter\HTTP\Response
+     */
+    public function updatePendaftaranStatus($idpendaftaran = null)
+    {
+        // Cek apakah request AJAX
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        // Cek apakah ID pendaftaran valid
+        if (!$idpendaftaran) {
+            return $this->response->setJSON(['status' => false, 'message' => 'ID Pendaftaran tidak valid']);
+        }
+
+        // Ambil data pendaftaran
+        $pendaftaran = $this->pendaftaranModel->find($idpendaftaran);
+        if (!$pendaftaran) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Pendaftaran tidak ditemukan']);
+        }
+
+        // Cek apakah pendaftaran milik user yang sedang login
+        if ($pendaftaran['iduser'] != $this->session->get('id')) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Anda tidak memiliki akses ke pendaftaran ini']);
+        }
+
+        // Ambil data dari request
+        $json = $this->request->getJSON();
+        $status = isset($json->status) ? $json->status : 'cancelled';
+
+        // Jika status adalah cancelled, kembalikan kuota paket
+        if ($status === 'cancelled' && $pendaftaran['status'] !== 'cancelled') {
+            // Hitung jumlah jamaah dalam pendaftaran
+            $detailPendaftaran = $this->detailPendaftaranModel->where('idpendaftaran', $idpendaftaran)->findAll();
+            $jamaahCount = count($detailPendaftaran);
+
+            // Kembalikan kuota paket
+            $this->paketModel->restoreQuota($pendaftaran['paketid'], $jamaahCount);
+        }
+
+        // Update status pendaftaran
+        $this->pendaftaranModel->update($idpendaftaran, [
+            'status' => $status
+        ]);
+
+        // Kirim notifikasi melalui WebSocket
+        $this->sendToWebSocket([
+            'type' => 'pendaftaran_status_updated',
+            'pendaftaran_id' => $idpendaftaran,
+            'status' => $status,
+            'message' => 'Status pendaftaran telah diperbarui menjadi ' . $status
+        ]);
+
+        return $this->response->setJSON([
+            'status' => true,
+            'message' => 'Status pendaftaran berhasil diperbarui'
+        ]);
+    }
+
+    // Method untuk mengirim data ke WebSocket
+    private function sendToWebSocket($data)
+    {
+        // Gunakan WebSocketClient dengan metode asynchronous
+        $client = new \App\Libraries\WebSocketClient();
+        return $client->sendAsync($data);
+    }
+
+    // Method untuk memeriksa pendaftaran yang sudah expired
+    public function checkExpiredPendaftaran()
+    {
+        // Cek apakah user adalah admin
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'admin') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        // Ambil semua pendaftaran yang sudah expired tapi masih pending
+        $expiredPendaftaran = $this->pendaftaranModel->getExpiredPendaftaran();
+        $cancelledCount = 0;
+
+        foreach ($expiredPendaftaran as $pendaftaran) {
+            // Hitung jumlah jamaah dalam pendaftaran
+            $detailPendaftaran = $this->detailPendaftaranModel->where('idpendaftaran', $pendaftaran['idpendaftaran'])->findAll();
+            $jamaahCount = count($detailPendaftaran);
+
+            // Batalkan pendaftaran
+            $this->pendaftaranModel->cancelExpiredPendaftaran($pendaftaran['idpendaftaran']);
+
+            // Kembalikan kuota paket
+            $this->paketModel->restoreQuota($pendaftaran['paketid'], $jamaahCount);
+
+            // Kirim notifikasi melalui WebSocket
+            $this->sendToWebSocket([
+                'type' => 'pendaftaran_cancelled',
+                'pendaftaran_id' => $pendaftaran['idpendaftaran'],
+                'message' => 'Pendaftaran dibatalkan karena waktu pembayaran telah habis'
+            ]);
+
+            $cancelledCount++;
+        }
+
+        return $this->response->setJSON([
+            'status' => true,
+            'message' => "{$cancelledCount} pendaftaran telah dibatalkan karena waktu pembayaran habis"
+        ]);
+    }
+}

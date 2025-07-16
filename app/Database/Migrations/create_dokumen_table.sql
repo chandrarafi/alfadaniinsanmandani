@@ -1,0 +1,12 @@
+-- Tabel Dokumen
+CREATE TABLE IF NOT EXISTS `dokumen` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `idjamaah` VARCHAR(20) NOT NULL,
+  `namadokumen` VARCHAR(100) NOT NULL,
+  `file` VARCHAR(255) NOT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `fk_dokumen_jamaah` (`idjamaah`),
+  CONSTRAINT `fk_dokumen_jamaah` FOREIGN KEY (`idjamaah`) REFERENCES `jamaah` (`idjamaah`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; 

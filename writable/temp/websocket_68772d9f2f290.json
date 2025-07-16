@@ -1,0 +1,1 @@
+{"host":"localhost","port":8080,"path":"\/","data":{"type":"pendaftaran_status_updated","pendaftaran_id":"PND202507004","status":"cancelled","message":"Status pendaftaran telah diperbarui menjadi cancelled"}}
