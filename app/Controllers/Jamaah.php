@@ -225,7 +225,33 @@ class Jamaah extends BaseController
         }
 
         return view('jamaah/orders/index', [
-            'title' => 'Daftar Pemesanan'
+            'title' => 'Daftar Pendaftaran'
+        ]);
+    }
+
+    public function getPendaftaran()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $userId = $this->session->get('id');
+        $pendaftaran = $this->pendaftaranModel->getPendaftaranByUserId($userId);
+
+        // Tambahkan informasi tambahan untuk setiap pendaftaran
+        foreach ($pendaftaran as &$item) {
+            // Hitung jumlah jamaah yang terdaftar
+            $jamaahCount = $this->detailPendaftaranModel->where('idpendaftaran', $item['idpendaftaran'])->countAllResults();
+            $item['total_jamaah'] = $jamaahCount;
+
+            // Format kode pendaftaran
+            $item['kodependaftaran'] = $item['idpendaftaran'];
+        }
+
+        return $this->response->setJSON([
+            'status' => true,
+            'data' => $pendaftaran
         ]);
     }
 
@@ -436,20 +462,16 @@ class Jamaah extends BaseController
         // Buat ID pendaftaran baru
         $idPendaftaran = $this->pendaftaranModel->getNewId();
 
-        // Set waktu expired (15 menit dari sekarang) dengan format yang benar
-        $now = new \DateTime('now', new \DateTimeZone('Asia/Jakarta'));
-        $expiredAt = $now->modify('+15 minutes')->format('Y-m-d H:i:s');
-
-        // Simpan data pendaftaran
+        // Simpan data pendaftaran (tanpa expired_at)
         $dataPendaftaran = [
             'idpendaftaran' => $idPendaftaran,
             'iduser' => $userId,
             'paketid' => $paketId,
             'tanggaldaftar' => date('Y-m-d'),
             'totalbayar' => $totalBayar,
-            'sisabayar' => $sisaBayar,
+            'sisabayar' => $totalBayar, // Sisa bayar sama dengan total bayar karena DP belum dibayarkan
             'status' => 'pending',
-            'expired_at' => $expiredAt
+            'expired_at' => null // Kosongkan expired_at agar tidak ada timer
         ];
 
         $this->pendaftaranModel->insert($dataPendaftaran);
@@ -463,28 +485,11 @@ class Jamaah extends BaseController
             $this->detailPendaftaranModel->simpan($dataDetail);
         }
 
-        // Jika ada uang muka, simpan data pembayaran
-        if ($uangMuka > 0) {
-            $idPembayaran = $this->pembayaranModel->getNewId();
-
-            $dataPembayaran = [
-                'idpembayaran' => $idPembayaran,
-                'pendaftaranid' => $idPendaftaran,
-                'tanggalbayar' => date('Y-m-d'),
-                'metodepembayaran' => 'Transfer Bank',
-                'tipepembayaran' => 'Uang Muka',
-                'jumlahbayar' => $uangMuka,
-                'statuspembayaran' => false // Belum dikonfirmasi
-            ];
-
-            $this->pembayaranModel->simpan($dataPembayaran);
-        }
-
         // Kirim data ke WebSocket untuk pembaruan realtime
         $this->sendToWebSocket([
             'type' => 'new_pendaftaran',
             'pendaftaran_id' => $idPendaftaran,
-            'expired_at' => $expiredAt,
+            'expired_at' => null, // Tidak ada expired time
             'status' => 'pending'
         ]);
 
@@ -526,6 +531,39 @@ class Jamaah extends BaseController
         return view('jamaah/orders/pembayaran', [
             'title' => 'Pembayaran',
             'pendaftaran' => $pendaftaran,
+            'pembayaran' => $pembayaran
+        ]);
+    }
+
+    public function detailOrder($idpendaftaran = null)
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return redirect()->to('auth');
+        }
+
+        if (!$idpendaftaran) {
+            return redirect()->to('jamaah/orders');
+        }
+
+        $userId = $this->session->get('id');
+        $pendaftaran = $this->pendaftaranModel->getPendaftaranDetail($idpendaftaran);
+
+        // Pastikan pendaftaran milik user yang sedang login
+        if (!$pendaftaran || $pendaftaran['iduser'] != $userId) {
+            return redirect()->to('jamaah/orders')->with('error', 'Data pendaftaran tidak ditemukan');
+        }
+
+        // Dapatkan data jamaah yang terdaftar di pendaftaran ini
+        $jamaahList = $this->detailPendaftaranModel->getJamaahByIdPendaftaran($idpendaftaran);
+
+        // Dapatkan data pembayaran
+        $pembayaran = $this->pembayaranModel->getPembayaranByPendaftaranId($idpendaftaran);
+
+        return view('jamaah/orders/detail', [
+            'title' => 'Detail Pendaftaran',
+            'pendaftaran' => $pendaftaran,
+            'jamaahList' => $jamaahList,
             'pembayaran' => $pembayaran
         ]);
     }
@@ -575,7 +613,7 @@ class Jamaah extends BaseController
 
         $pendaftaranId = $this->request->getPost('pendaftaran_id');
         $metodePembayaran = $this->request->getPost('metode_pembayaran');
-        $jumlahBayar = $this->request->getPost('jumlah_bayar'); // Menggunakan nilai raw
+        $jumlahBayar = $this->request->getPost('jumlah_bayar_raw'); // Menggunakan nilai raw
 
         // Upload bukti pembayaran
         $bukti = $this->request->getFile('bukti_bayar');
@@ -585,13 +623,17 @@ class Jamaah extends BaseController
         // Buat ID pembayaran baru
         $idPembayaran = $this->pembayaranModel->getNewId();
 
+        // Cek apakah ini pembayaran pertama untuk pendaftaran ini
+        $pembayaranSebelumnya = $this->pembayaranModel->where('pendaftaranid', $pendaftaranId)->findAll();
+        $tipePembayaran = empty($pembayaranSebelumnya) ? 'DP' : 'Cicilan';
+
         // Simpan data pembayaran
         $dataPembayaran = [
             'idpembayaran' => $idPembayaran,
             'pendaftaranid' => $pendaftaranId,
             'tanggalbayar' => date('Y-m-d'),
             'metodepembayaran' => $metodePembayaran,
-            'tipepembayaran' => 'Cicilan',
+            'tipepembayaran' => $tipePembayaran,
             'jumlahbayar' => $jumlahBayar,
             'buktibayar' => $namaFile,
             'statuspembayaran' => false // Belum dikonfirmasi
@@ -599,17 +641,24 @@ class Jamaah extends BaseController
 
         $this->pembayaranModel->simpan($dataPembayaran);
 
-        // Update sisa bayar di pendaftaran
-        $pendaftaran = $this->pendaftaranModel->find($pendaftaranId);
-        $sisaBayar = $pendaftaran['sisabayar'] - $jumlahBayar;
+        // PENTING: Tidak mengubah sisa bayar di sini
+        // Sisa bayar akan diupdate oleh admin saat konfirmasi pembayaran
 
-        $this->pendaftaranModel->update($pendaftaranId, [
-            'sisabayar' => $sisaBayar
+        // Ambil data pendaftaran untuk dikirim ke WebSocket
+        $pendaftaran = $this->pendaftaranModel->find($pendaftaranId);
+
+        // Kirim data ke WebSocket untuk pembaruan realtime
+        $this->sendToWebSocket([
+            'type' => 'payment_received',
+            'pendaftaran_id' => $pendaftaranId,
+            'status' => $pendaftaran['status'],
+            'timer_stop' => true, // Menandakan timer harus dihentikan
+            'message' => 'Pembayaran berhasil disimpan, menunggu konfirmasi admin'
         ]);
 
         return $this->response->setJSON([
             'status' => true,
-            'message' => 'Pembayaran berhasil disimpan',
+            'message' => 'Pembayaran berhasil disimpan, menunggu konfirmasi admin',
             'redirect' => base_url('jamaah/orders')
         ]);
     }
@@ -956,6 +1005,7 @@ class Jamaah extends BaseController
         // Ambil pendaftaran yang pending
         $pendingPendaftaran = $this->pendaftaranModel->where('iduser', $userId)
             ->where('status', 'pending')
+            ->where('expired_at IS NOT NULL')
             ->where('expired_at >', $currentTime)
             ->findAll();
 
@@ -1054,6 +1104,7 @@ class Jamaah extends BaseController
         // Cek pendaftaran yang sudah expired tapi belum diupdate statusnya
         $now = date('Y-m-d H:i:s');
         $expiredPendaftaran = $this->pendaftaranModel->where('status', 'pending')
+            ->where('expired_at IS NOT NULL')
             ->where('expired_at <', $now)
             ->findAll();
 

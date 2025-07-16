@@ -209,4 +209,16 @@ class CountdownTimer {
       clearInterval(this.interval);
     }
   }
+
+  /**
+   * Hentikan timer dan hilangkan elemen countdown
+   */
+  stopTimer() {
+    this.stop();
+
+    // Sembunyikan container timer
+    if (this.containerEl) {
+      this.containerEl.style.display = "none";
+    }
+  }
 }

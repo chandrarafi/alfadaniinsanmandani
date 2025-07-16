@@ -100,12 +100,13 @@
                                 <input type="text" id="total_harga_display" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" value="Rp <?= number_format($paket['harga'], 0, ',', '.') ?>" readonly>
                             </div>
                             <div>
-                                <label for="uang_muka" class="block text-sm font-medium text-gray-700 mb-1">Uang Muka (Minimal 30%)</label>
+                                <label for="uang_muka" class="block text-sm font-medium text-gray-700 mb-1">Rencana Uang Muka (Min. 30%)</label>
                                 <input type="number" id="uang_muka" name="uang_muka" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" min="<?= $paket['harga'] * 0.3 ?>" max="<?= $paket['harga'] ?>" value="<?= $paket['harga'] * 0.3 ?>">
                                 <p class="mt-1 text-sm text-gray-500">Minimal Rp <?= number_format($paket['harga'] * 0.3, 0, ',', '.') ?></p>
+                                <p class="mt-1 text-sm text-blue-600">*Ini hanya estimasi, pembayaran akan dilakukan pada langkah berikutnya</p>
                             </div>
                             <div>
-                                <label for="sisa_bayar" class="block text-sm font-medium text-gray-700 mb-1">Sisa Pembayaran</label>
+                                <label for="sisa_bayar" class="block text-sm font-medium text-gray-700 mb-1">Estimasi Sisa Pembayaran</label>
                                 <input type="text" id="sisa_bayar" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" value="Rp <?= number_format($paket['harga'] * 0.7, 0, ',', '.') ?>" readonly>
                             </div>
                         </div>

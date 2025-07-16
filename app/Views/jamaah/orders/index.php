@@ -84,6 +84,11 @@
                                     <a href="<?= base_url('jamaah/orders/pembayaran/') ?>${item.idpendaftaran}" class="text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-xs font-medium mr-1">Bayar</a>
                                     <a href="<?= base_url('jamaah/orders/detail/') ?>${item.idpendaftaran}" class="text-white bg-primary-600 hover:bg-primary-700 px-3 py-1 rounded text-xs font-medium">Detail</a>
                                 `;
+                            } else if (item.status === 'confirmed' && item.sisabayar > 0) {
+                                actionButtons = `
+                                    <a href="<?= base_url('jamaah/orders/pembayaran/') ?>${item.idpendaftaran}" class="text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-xs font-medium mr-1">Bayar Cicilan</a>
+                                    <a href="<?= base_url('jamaah/orders/detail/') ?>${item.idpendaftaran}" class="text-white bg-primary-600 hover:bg-primary-700 px-3 py-1 rounded text-xs font-medium">Detail</a>
+                                `;
                             } else {
                                 actionButtons = `
                                     <a href="<?= base_url('jamaah/orders/detail/') ?>${item.idpendaftaran}" class="text-white bg-primary-600 hover:bg-primary-700 px-3 py-1 rounded text-xs font-medium">Detail</a>

@@ -53,6 +53,13 @@
                     <div class="menu-title">Manajemen Paket</div>
                 </a>
             </li>
+            <li>
+                <a href="<?= base_url('admin/pendaftaran') ?>">
+                    <div class="parent-icon"><i class='bx bx-list-check'></i>
+                    </div>
+                    <div class="menu-title">Pendaftaran & Pembayaran</div>
+                </a>
+            </li>
         <?php endif; ?>
 
         <?php if ($role == 'admin' || $role == 'pimpinan'): ?>
@@ -64,6 +71,10 @@
                     <div class="menu-title">Laporan</div>
                 </a>
                 <ul>
+                    <li> <a href="<?= base_url('admin/laporan/jamaah') ?>"><i class="bx bx-right-arrow-alt"></i>Laporan Jamaah</a>
+                    </li>
+                    <li> <a href="<?= base_url('admin/laporan/paket') ?>"><i class="bx bx-right-arrow-alt"></i>Laporan Paket</a>
+                    </li>
                     <li> <a href="<?= base_url($role . '/reports/daily') ?>"><i class="bx bx-right-arrow-alt"></i>Laporan Harian</a>
                     </li>
                     <li> <a href="<?= base_url($role . '/reports/monthly') ?>"><i class="bx bx-right-arrow-alt"></i>Laporan Bulanan</a>

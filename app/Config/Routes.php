@@ -82,6 +82,28 @@ $routes->group('admin/jamaah', ['filter' => 'auth:admin'], function ($routes) {
     $routes->post('delete', 'Admin\Jamaah::delete');
 });
 
+// Laporan routes
+$routes->group('admin/laporan', ['filter' => 'auth:admin'], function ($routes) {
+    $routes->get('jamaah', 'Admin\Jamaah::laporan');
+    $routes->get('jamaah/cetak', 'Admin\Jamaah::cetakLaporan');
+    $routes->get('paket', 'Admin\Laporan::paket');
+    $routes->get('get-paket', 'Admin\Laporan::getPaket');
+});
+
+// Admin Routes
+$routes->group('admin', ['filter' => 'auth:admin'], function ($routes) {
+    $routes->get('/', 'Admin\Admin::index');
+
+    // Pendaftaran dan Pembayaran routes
+    $routes->get('pendaftaran', 'Admin\Admin::pendaftaran');
+    $routes->get('get-pendaftaran', 'Admin\Admin::getPendaftaran');
+    $routes->get('pendaftaran/detail/(:segment)', 'Admin\Admin::detailPendaftaran/$1');
+    $routes->post('konfirmasi-pembayaran', 'Admin\Admin::konfirmasiPembayaran');
+
+    // Tambahkan rute admin lainnya di sini
+    // ...
+});
+
 // Jamaah Routes
 $routes->group('jamaah', ['filter' => 'auth'], function ($routes) {
     $routes->get('/', 'Jamaah::index');
@@ -92,6 +114,9 @@ $routes->group('jamaah', ['filter' => 'auth'], function ($routes) {
     // Orders routes
     $routes->get('orders', 'Jamaah::orders');
     $routes->get('orders/new', 'Jamaah::newOrder');
+    $routes->get('get-pendaftaran', 'Jamaah::getPendaftaran');
+    $routes->get('orders/pembayaran/(:segment)', 'Jamaah::pembayaran/$1');
+    $routes->get('orders/detail/(:segment)', 'Jamaah::detailOrder/$1');
 
     // Paket routes
     $routes->get('paket', 'Jamaah::paket');

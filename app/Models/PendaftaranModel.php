@@ -66,12 +66,18 @@ class PendaftaranModel extends Model
     // Mendapatkan semua pendaftaran
     public function getAllPendaftaran()
     {
-        return $this->select('pendaftaran.*, paket.namapaket, paket.kategoriid, user.nama, kategori.namakategori')
-            ->join('paket', 'paket.idpaket = pendaftaran.paketid')
-            ->join('user', 'user.id = pendaftaran.iduser')
+        // Tambahkan log untuk debugging
+        $result = $this->select('pendaftaran.*, paket.namapaket, paket.kategoriid, user.nama, kategori.namakategori')
+            ->join('paket', 'paket.idpaket = pendaftaran.paketid', 'left')
+            ->join('user', 'user.id = pendaftaran.iduser', 'left')
             ->join('kategori', 'kategori.idkategori = paket.kategoriid', 'left')
             ->orderBy('pendaftaran.created_at', 'DESC')
             ->findAll();
+
+        // Log query terakhir untuk debugging
+        log_message('debug', 'Last Query: ' . $this->db->getLastQuery());
+
+        return $result;
     }
 
     // Mendapatkan pendaftaran yang sudah expired
@@ -82,6 +88,7 @@ class PendaftaranModel extends Model
         $currentTime = $now->format('Y-m-d H:i:s');
 
         return $this->where('status', 'pending')
+            ->where('expired_at IS NOT NULL')
             ->where('expired_at <', $currentTime)
             ->findAll();
     }

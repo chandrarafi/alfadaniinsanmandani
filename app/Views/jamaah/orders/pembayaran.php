@@ -16,15 +16,30 @@
     </div>
 
     <?php if ($pendaftaran['status'] === 'pending'): ?>
-        <!-- Countdown Timer -->
-        <div id="countdown-container" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="font-medium text-yellow-800">Batas Waktu Pembayaran</h3>
-                    <p class="text-sm text-yellow-700">Segera lakukan pembayaran sebelum batas waktu berakhir</p>
+        <?php if (isset($pendaftaran['expired_at']) && $pendaftaran['expired_at'] !== null): ?>
+            <!-- Countdown Timer -->
+            <div id="countdown-container" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-medium text-yellow-800">Batas Waktu Pembayaran</h3>
+                        <p class="text-sm text-yellow-700">Segera lakukan pembayaran sebelum batas waktu berakhir</p>
+                    </div>
+                    <div id="countdown" class="text-xl font-bold text-yellow-800" data-expired-at="<?= $pendaftaran['expired_at'] ?>">
+                        15:00
+                    </div>
                 </div>
-                <div id="countdown" class="text-xl font-bold text-yellow-800" data-expired-at="<?= isset($pendaftaran['expired_at']) ? $pendaftaran['expired_at'] : date('Y-m-d H:i:s', strtotime('+15 minutes')) ?>">
-                    15:00
+            </div>
+        <?php endif; ?>
+    <?php elseif ($pendaftaran['status'] === 'confirmed'): ?>
+        <!-- Pembayaran Dikonfirmasi -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-check-circle text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="font-medium text-blue-800">Pembayaran Dikonfirmasi</h3>
+                    <p class="text-sm text-blue-700">Pembayaran Anda telah dikonfirmasi. Terima kasih.</p>
                 </div>
             </div>
         </div>
@@ -203,10 +218,17 @@
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <span class="text-gray-500 sm:text-sm">Rp</span>
                                     </div>
-                                    <input type="text" id="jumlah_bayar" name="jumlah_bayar" class="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" value="<?= number_format($pendaftaran['sisabayar'], 0, ',', '.') ?>" required>
-                                    <input type="hidden" id="jumlah_bayar_raw" name="jumlah_bayar_raw" value="<?= $pendaftaran['sisabayar'] ?>">
+                                    <?php
+                                    // Hitung DP yang direkomendasikan (30% dari total)
+                                    $rekomendasiDP = $pendaftaran['totalbayar'] * 0.3;
+                                    // Jika sisa bayar kurang dari DP yang direkomendasikan, gunakan sisa bayar
+                                    $jumlahBayarDefault = min($rekomendasiDP, $pendaftaran['sisabayar']);
+                                    ?>
+                                    <input type="text" id="jumlah_bayar" name="jumlah_bayar" class="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" value="<?= number_format($jumlahBayarDefault, 0, ',', '.') ?>" required>
+                                    <input type="hidden" id="jumlah_bayar_raw" name="jumlah_bayar_raw" value="<?= $jumlahBayarDefault ?>">
                                 </div>
-                                <p class="mt-1 text-sm text-gray-500">Maksimal Rp <?= number_format($pendaftaran['sisabayar'], 0, ',', '.') ?></p>
+                                <p class="mt-1 text-sm text-gray-500">Rekomendasi DP minimal 30%: Rp <?= number_format($rekomendasiDP, 0, ',', '.') ?></p>
+                                <p class="mt-1 text-sm text-gray-500">Maksimal pembayaran: Rp <?= number_format($pendaftaran['sisabayar'], 0, ',', '.') ?></p>
                             </div>
 
                             <div>
@@ -348,6 +370,21 @@
                             window.location.reload();
                         });
                     }
+                    // Handle payment_received
+                    else if (data.type === 'payment_received' && data.pendaftaran_id === '<?= $pendaftaran['idpendaftaran'] ?>') {
+                        // Hentikan timer jika flag timer_stop=true
+                        if (data.timer_stop && window.countdownTimer) {
+                            window.countdownTimer.stopTimer();
+
+                            // Tampilkan notifikasi
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Pembayaran Diterima',
+                                text: data.message || 'Pembayaran Anda telah diterima dan sedang menunggu konfirmasi admin.',
+                                confirmButtonColor: '#4F46E5'
+                            });
+                        }
+                    }
                 };
 
                 socket.onerror = function(error) {
@@ -371,19 +408,27 @@
         // Hubungkan ke WebSocket
         connectWebSocket();
 
-        // Jalankan countdown jika status pending
+        // Jalankan countdown jika status pending dan ada expired_at
         if ('<?= isset($pendaftaran['status']) ? $pendaftaran['status'] : '' ?>' === 'pending') {
-            // Ambil waktu expired dari data attribute
-            const expiredAtStr = $('#countdown').data('expired-at');
+            // Ambil elemen countdown
+            const countdownEl = $('#countdown');
 
-            // Inisialisasi dan jalankan countdown timer
-            const countdownTimer = new CountdownTimer(
-                'countdown',
-                'countdown-container',
-                expiredAtStr,
-                'formPembayaran'
-            );
-            countdownTimer.start();
+            // Jalankan timer hanya jika elemen countdown ada (expired_at tidak null)
+            if (countdownEl.length > 0) {
+                const expiredAtStr = countdownEl.data('expired-at');
+
+                // Inisialisasi dan jalankan countdown timer
+                const countdownTimer = new CountdownTimer(
+                    'countdown',
+                    'countdown-container',
+                    expiredAtStr,
+                    'formPembayaran'
+                );
+                countdownTimer.start();
+
+                // Simpan instance countdownTimer ke window agar dapat diakses di luar scope
+                window.countdownTimer = countdownTimer;
+            }
         }
 
         // Format input jumlah bayar sebagai Rupiah
@@ -456,6 +501,11 @@
                 },
                 success: function(response) {
                     if (response.status) {
+                        // Hentikan timer jika ada
+                        if (window.countdownTimer) {
+                            window.countdownTimer.stopTimer();
+                        }
+
                         Swal.fire({
                             icon: 'success',
                             title: 'Berhasil',

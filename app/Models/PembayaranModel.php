@@ -9,7 +9,7 @@ class PembayaranModel extends Model
     protected $table = 'pembayaran';
     protected $primaryKey = 'idpembayaran';
     protected $useAutoIncrement = false;
-    protected $allowedFields = ['idpembayaran', 'pendaftaranid', 'tanggalbayar', 'metodepembayaran', 'tipepembayaran', 'jumlahbayar', 'buktibayar', 'statuspembayaran'];
+    protected $allowedFields = ['idpembayaran', 'pendaftaranid', 'tanggalbayar', 'metodepembayaran', 'tipepembayaran', 'jumlahbayar', 'buktibayar', 'statuspembayaran', 'keterangan'];
     protected $useTimestamps = true;
     protected $dateFormat = 'datetime';
     protected $createdField = 'created_at';
@@ -68,6 +68,18 @@ class PembayaranModel extends Model
             ->join('paket', 'paket.idpaket = pendaftaran.paketid')
             ->join('user', 'user.id = pendaftaran.iduser')
             ->orderBy('pembayaran.created_at', 'DESC')
+            ->findAll();
+    }
+
+    // Mendapatkan pembayaran yang belum dikonfirmasi
+    public function getPembayaranBelumDikonfirmasi()
+    {
+        return $this->select('pembayaran.*, pendaftaran.idpendaftaran, pendaftaran.sisabayar, pendaftaran.totalbayar, paket.namapaket, user.nama as nama_jamaah')
+            ->join('pendaftaran', 'pendaftaran.idpendaftaran = pembayaran.pendaftaranid')
+            ->join('paket', 'paket.idpaket = pendaftaran.paketid')
+            ->join('user', 'user.id = pendaftaran.iduser')
+            ->where('pembayaran.statuspembayaran', false)
+            ->orderBy('pembayaran.created_at', 'ASC')
             ->findAll();
     }
 

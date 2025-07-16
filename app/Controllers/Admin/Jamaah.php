@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Models\JamaahModel;
 use App\Models\UserModel;
 use CodeIgniter\API\ResponseTrait;
+use Dompdf\Dompdf;
 
 class Jamaah extends BaseController
 {
@@ -319,5 +320,43 @@ class Jamaah extends BaseController
             'status' => true,
             'message' => 'Jamaah berhasil dihapus'
         ]);
+    }
+
+    // Menampilkan halaman laporan jamaah
+    public function laporan()
+    {
+        $data = [
+            'title' => 'Laporan Jamaah',
+            'jamaah' => $this->jamaahModel->getAllJamaah()
+        ];
+        return view('admin/jamaah/laporan', $data);
+    }
+
+    // Mencetak laporan jamaah ke PDF
+    public function cetakLaporan()
+    {
+        $filename = 'laporan_jamaah_' . date('YmdHis') . '.pdf';
+
+        // instantiate and use the dompdf class
+        $dompdf = new Dompdf();
+
+        // load HTML content
+        $logoPath = FCPATH . 'assets/images/applogo.png';
+        $logoData = base64_encode(file_get_contents($logoPath));
+        $logoSrc = 'data:image/' . pathinfo($logoPath, PATHINFO_EXTENSION) . ';base64,' . $logoData;
+
+        $data['jamaah'] = $this->jamaahModel->getAllJamaah();
+        $data['logo'] = $logoSrc;
+        $html = view('admin/jamaah/laporan_pdf', $data);
+        $dompdf->loadHtml($html);
+
+        // (Optional) Setup the paper size and orientation
+        $dompdf->setPaper('A4', 'landscape');
+
+        // Render the HTML as PDF
+        $dompdf->render();
+
+        // Output the generated PDF to Browser
+        $dompdf->stream($filename, array("Attachment" => 0));
     }
 }
