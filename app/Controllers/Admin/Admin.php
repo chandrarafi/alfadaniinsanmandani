@@ -335,12 +335,25 @@ class Admin extends BaseController
             }
         }
 
+        // Ambil dokumen jamaah
+        $dokumenModel = new \App\Models\DokumenModel();
+        $dokumenJamaah = [];
+
+        // Kumpulkan dokumen untuk setiap jamaah
+        foreach ($jamaahList as $jamaah) {
+            $dokumen = $dokumenModel->getDokumenByJamaahId($jamaah['idjamaah']);
+            if (!empty($dokumen)) {
+                $dokumenJamaah[$jamaah['idjamaah']] = $dokumen;
+            }
+        }
+
         $data = [
             'title' => 'Detail Pendaftaran',
             'user' => $this->session->get(),
             'pendaftaran' => $pendaftaran,
             'jamaahList' => $jamaahList,
-            'pembayaran' => $pembayaran
+            'pembayaran' => $pembayaran,
+            'dokumenJamaah' => $dokumenJamaah
         ];
 
         return view('admin/pendaftaran/detail', $data);

@@ -119,6 +119,7 @@
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metode</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -136,11 +137,16 @@
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Menunggu Konfirmasi</span>
                                 <?php endif; ?>
                             </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <a href="<?= base_url('jamaah/faktur/' . $bayar['idpembayaran']) ?>" class="text-blue-600 hover:text-blue-900" target="_blank">
+                                    <i class="fas fa-file-invoice mr-1"></i> Lihat Faktur
+                                </a>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($pembayaran)): ?>
                         <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">Belum ada pembayaran</td>
+                            <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">Belum ada pembayaran</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>

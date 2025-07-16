@@ -239,14 +239,28 @@ class Jamaah extends BaseController
         $userId = $this->session->get('id');
         $pendaftaran = $this->pendaftaranModel->getPendaftaranByUserId($userId);
 
-        // Tambahkan informasi tambahan untuk setiap pendaftaran
         foreach ($pendaftaran as &$item) {
-            // Hitung jumlah jamaah yang terdaftar
-            $jamaahCount = $this->detailPendaftaranModel->where('idpendaftaran', $item['idpendaftaran'])->countAllResults();
-            $item['total_jamaah'] = $jamaahCount;
+            // Hitung jumlah jamaah
+            $detailPendaftaran = $this->detailPendaftaranModel->where('idpendaftaran', $item['idpendaftaran'])->findAll();
+            $item['total_jamaah'] = count($detailPendaftaran);
 
             // Format kode pendaftaran
-            $item['kodependaftaran'] = $item['idpendaftaran'];
+            $item['kodependaftaran'] = 'REG-' . $item['idpendaftaran'];
+
+            // Ambil data pembayaran
+            $pembayaran = $this->pembayaranModel->getPembayaranByPendaftaranId($item['idpendaftaran']);
+            $item['pembayaran'] = $pembayaran;
+            $item['total_pembayaran'] = count($pembayaran);
+
+            // Ambil pembayaran terakhir yang sudah dikonfirmasi
+            $pembayaranKonfirmasi = array_filter($pembayaran, function ($p) {
+                return $p['statuspembayaran'] == 1;
+            });
+
+            if (!empty($pembayaranKonfirmasi)) {
+                $lastPembayaran = end($pembayaranKonfirmasi);
+                $item['last_payment_id'] = $lastPembayaran['idpembayaran'];
+            }
         }
 
         return $this->response->setJSON([
@@ -878,14 +892,19 @@ class Jamaah extends BaseController
 
     public function uploadDokumen()
     {
+        // Log untuk debugging
+        log_message('debug', 'uploadDokumen dipanggil');
+
         // Cek apakah user sudah login
         if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            log_message('debug', 'uploadDokumen: user tidak login atau bukan jamaah');
             return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
         }
 
-        if (!$this->request->isAJAX()) {
-            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
-        }
+        // Validasi AJAX dinonaktifkan untuk debugging
+        // if (!$this->request->isAJAX()) {
+        //     return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        // }
 
         $rules = [
             'jamaah_id' => 'required',
@@ -966,6 +985,50 @@ class Jamaah extends BaseController
         ]);
     }
 
+    public function hapusDokumen($id = null)
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        if (!$id) {
+            return $this->response->setJSON(['status' => false, 'message' => 'ID dokumen tidak valid']);
+        }
+
+        // Ambil data dokumen
+        $dokumen = $this->dokumenModel->find($id);
+        if (!$dokumen) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Dokumen tidak ditemukan']);
+        }
+
+        // Cek kepemilikan dokumen
+        $userId = $this->session->get('id');
+        $jamaah = $this->jamaahModel->where('idjamaah', $dokumen['idjamaah'])->first();
+
+        if (!$jamaah || $jamaah['userid'] != $userId) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Anda tidak memiliki akses untuk menghapus dokumen ini']);
+        }
+
+        // Hapus file dari server
+        $filePath = ROOTPATH . 'public/uploads/dokumen/' . $dokumen['file'];
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
+
+        // Hapus data dokumen dari database
+        $this->dokumenModel->hapus($id);
+
+        return $this->response->setJSON([
+            'status' => true,
+            'message' => 'Dokumen berhasil dihapus'
+        ]);
+    }
+
     public function dokumen()
     {
         // Cek apakah user sudah login
@@ -984,6 +1047,148 @@ class Jamaah extends BaseController
             'title' => 'Dokumen Jamaah',
             'jamaahList' => $jamaahList
         ]);
+    }
+
+    /**
+     * Melihat faktur pembayaran
+     */
+    public function fakturPembayaran($idpembayaran = null)
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            // Simpan halaman yang ingin diakses
+            $this->session->set('last_page', current_url());
+            return redirect()->to('auth');
+        }
+
+        if (!$idpembayaran) {
+            return redirect()->to('jamaah/orders')->with('error', 'ID Pembayaran tidak valid');
+        }
+
+        $userId = $this->session->get('id');
+
+        // Ambil detail pembayaran
+        $pembayaran = $this->pembayaranModel->getPembayaranDetail($idpembayaran);
+
+        if (!$pembayaran) {
+            return redirect()->to('jamaah/orders')->with('error', 'Data pembayaran tidak ditemukan');
+        }
+
+        // Cek apakah pembayaran milik user yang sedang login
+        $pendaftaran = $this->pendaftaranModel->find($pembayaran['pendaftaranid']);
+        if (!$pendaftaran || $pendaftaran['iduser'] != $userId) {
+            return redirect()->to('jamaah/orders')->with('error', 'Anda tidak memiliki akses ke pembayaran ini');
+        }
+
+        // Ambil detail pendaftaran
+        $pendaftaranDetail = $this->pendaftaranModel->getPendaftaranDetail($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah yang terdaftar
+        $jamaahList = $this->detailPendaftaranModel->getJamaahByIdPendaftaran($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah utama (yang login)
+        $jamaahUtama = $this->jamaahModel->where('userid', $userId)->first();
+
+        // Data perusahaan/travel (hardcoded)
+        $companyInfo = [
+            'nama' => 'Alfadani Insan Mandani',
+            'alamat' => 'Padang, Indonesia',
+            'telepon' => '021-1234567',
+            'email' => 'info@alfadani.com',
+            'website' => 'www.alfadani.com'
+        ];
+
+        $data = [
+            'title' => 'Faktur Pembayaran',
+            'pembayaran' => $pembayaran,
+            'pendaftaran' => $pendaftaranDetail,
+            'jamaahList' => $jamaahList,
+            'jamaahUtama' => $jamaahUtama,
+            'companyInfo' => $companyInfo
+        ];
+
+        return view('jamaah/orders/faktur', $data);
+    }
+
+    /**
+     * Cetak faktur pembayaran dengan DOMPDF
+     */
+    public function cetakFaktur($idpembayaran = null)
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            // Simpan halaman yang ingin diakses
+            $this->session->set('last_page', current_url());
+            return redirect()->to('auth');
+        }
+
+        if (!$idpembayaran) {
+            return redirect()->to('jamaah/orders')->with('error', 'ID Pembayaran tidak valid');
+        }
+
+        $userId = $this->session->get('id');
+
+        // Ambil detail pembayaran
+        $pembayaran = $this->pembayaranModel->getPembayaranDetail($idpembayaran);
+
+        if (!$pembayaran) {
+            return redirect()->to('jamaah/orders')->with('error', 'Data pembayaran tidak ditemukan');
+        }
+
+        // Cek apakah pembayaran milik user yang sedang login
+        $pendaftaran = $this->pendaftaranModel->find($pembayaran['pendaftaranid']);
+        if (!$pendaftaran || $pendaftaran['iduser'] != $userId) {
+            return redirect()->to('jamaah/orders')->with('error', 'Anda tidak memiliki akses ke pembayaran ini');
+        }
+
+        // Ambil detail pendaftaran
+        $pendaftaranDetail = $this->pendaftaranModel->getPendaftaranDetail($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah yang terdaftar
+        $jamaahList = $this->detailPendaftaranModel->getJamaahByIdPendaftaran($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah utama (yang login)
+        $jamaahUtama = $this->jamaahModel->where('userid', $userId)->first();
+
+        // Data perusahaan/travel (hardcoded)
+        $companyInfo = [
+            'nama' => 'Alfadani Insan Mandani',
+            'alamat' => 'Jakarta, Indonesia',
+            'telepon' => '021-1234567',
+            'email' => 'info@alfadani.com',
+            'website' => 'www.alfadani.com'
+        ];
+
+        $data = [
+            'title' => 'Faktur Pembayaran',
+            'pembayaran' => $pembayaran,
+            'pendaftaran' => $pendaftaranDetail,
+            'jamaahList' => $jamaahList,
+            'jamaahUtama' => $jamaahUtama,
+            'companyInfo' => $companyInfo
+        ];
+
+        // Inisialisasi DOMPDF
+        $dompdf = new \Dompdf\Dompdf();
+        $options = new \Dompdf\Options();
+        $options->set('isRemoteEnabled', true);
+        $dompdf->setOptions($options);
+
+        // Render view ke HTML
+        $html = view('jamaah/orders/cetak_faktur', $data);
+
+        // Load HTML ke DOMPDF
+        $dompdf->loadHtml($html);
+
+        // Set ukuran dan orientasi kertas
+        $dompdf->setPaper('A4', 'portrait');
+
+        // Render PDF
+        $dompdf->render();
+
+        // Output PDF ke browser
+        $dompdf->stream('faktur-' . $idpembayaran . '.pdf', ['Attachment' => false]);
+        exit();
     }
 
     /**

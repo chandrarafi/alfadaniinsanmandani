@@ -131,12 +131,17 @@ $routes->group('jamaah', ['filter' => 'auth'], function ($routes) {
     // Dokumen routes
     $routes->get('dokumen', 'Jamaah::dokumen');
     $routes->post('upload-dokumen', 'Jamaah::uploadDokumen');
+    $routes->post('uploadDokumen', 'Jamaah::uploadDokumen');
     $routes->get('get-dokumen/(:segment)', 'Jamaah::getDokumen/$1');
+    $routes->get('getDokumen/(:segment)', 'Jamaah::getDokumen/$1');
+    $routes->post('hapusDokumen/(:segment)', 'Jamaah::hapusDokumen/$1');
 
     // Pembayaran routes
     $routes->get('pembayaran/(:segment)', 'Jamaah::pembayaran/$1');
     $routes->post('save-pembayaran', 'Jamaah::savePembayaran');
     $routes->post('update-pendaftaran-status/(:segment)', 'Jamaah::updatePendaftaranStatus/$1');
+    $routes->get('faktur/(:segment)', 'Jamaah::fakturPembayaran/$1');
+    $routes->get('cetakFaktur/(:segment)', 'Jamaah::cetakFaktur/$1');
 
     // Jamaah Referensi routes
     $routes->get('referensi', 'Jamaah::jamaahReferensi');

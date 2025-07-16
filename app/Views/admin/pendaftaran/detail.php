@@ -143,12 +143,13 @@
                                 <th>Alamat</th>
                                 <th>No HP</th>
                                 <th>Email</th>
+                                <th>Dokumen</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($jamaahList)): ?>
                                 <tr>
-                                    <td colspan="8" class="text-center">Tidak ada data jamaah</td>
+                                    <td colspan="9" class="text-center">Tidak ada data jamaah</td>
                                 </tr>
                             <?php else: ?>
                                 <?php $no = 1;
@@ -162,6 +163,62 @@
                                         <td><?= $jamaah['alamat'] ?></td>
                                         <td><?= $jamaah['nohpjamaah'] ?></td>
                                         <td><?= $jamaah['emailjamaah'] ?? '-' ?></td>
+                                        <td>
+                                            <?php if (isset($dokumenJamaah[$jamaah['idjamaah']])): ?>
+                                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#dokumenModal<?= $jamaah['idjamaah'] ?>">
+                                                    <i class="bx bx-file"></i> Lihat Dokumen (<?= count($dokumenJamaah[$jamaah['idjamaah']]) ?>)
+                                                </button>
+
+                                                <!-- Modal Dokumen -->
+                                                <div class="modal fade" id="dokumenModal<?= $jamaah['idjamaah'] ?>" tabindex="-1" aria-labelledby="dokumenModalLabel<?= $jamaah['idjamaah'] ?>" aria-hidden="true">
+                                                    <div class="modal-dialog modal-lg">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title" id="dokumenModalLabel<?= $jamaah['idjamaah'] ?>">Dokumen <?= $jamaah['namajamaah'] ?></h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="row">
+                                                                    <?php foreach ($dokumenJamaah[$jamaah['idjamaah']] as $dokumen): ?>
+                                                                        <div class="col-md-6 mb-3">
+                                                                            <div class="card">
+                                                                                <div class="card-header">
+                                                                                    <h6 class="mb-0"><?= $dokumen['namadokumen'] ?></h6>
+                                                                                </div>
+                                                                                <div class="card-body text-center">
+                                                                                    <?php
+                                                                                    $fileUrl = base_url('uploads/dokumen/' . $dokumen['file']);
+                                                                                    $fileExt = pathinfo($dokumen['file'], PATHINFO_EXTENSION);
+                                                                                    if (in_array(strtolower($fileExt), ['jpg', 'jpeg', 'png', 'gif'])):
+                                                                                    ?>
+                                                                                        <img src="<?= $fileUrl ?>" alt="<?= $dokumen['namadokumen'] ?>" class="img-fluid mb-2" style="max-height: 200px;">
+                                                                                    <?php else: ?>
+                                                                                        <i class="bx bx-file text-primary" style="font-size: 64px;"></i>
+                                                                                    <?php endif; ?>
+                                                                                    <div>
+                                                                                        <a href="<?= $fileUrl ?>" target="_blank" class="btn btn-sm btn-primary">
+                                                                                            <i class="bx bx-show"></i> Lihat Dokumen
+                                                                                        </a>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="card-footer text-muted small">
+                                                                                    Diupload: <?= date('d/m/Y H:i', strtotime($dokumen['created_at'])) ?>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    <?php endforeach; ?>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            <?php else: ?>
+                                                <span class="badge bg-warning">Belum ada dokumen</span>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -248,14 +305,6 @@
 
 <?= $this->section('js') ?>
 <script>
-    // Alert debugging untuk memastikan script berjalan
-    Swal.fire({
-        title: 'Script Loaded',
-        text: 'JavaScript sudah dimuat dengan benar',
-        icon: 'info',
-        confirmButtonText: 'OK'
-    });
-
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM fully loaded');
 

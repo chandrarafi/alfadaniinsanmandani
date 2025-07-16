@@ -87,12 +87,30 @@
                             } else if (item.status === 'confirmed' && item.sisabayar > 0) {
                                 actionButtons = `
                                     <a href="<?= base_url('jamaah/orders/pembayaran/') ?>${item.idpendaftaran}" class="text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-xs font-medium mr-1">Bayar Cicilan</a>
-                                    <a href="<?= base_url('jamaah/orders/detail/') ?>${item.idpendaftaran}" class="text-white bg-primary-600 hover:bg-primary-700 px-3 py-1 rounded text-xs font-medium">Detail</a>
+                                    <a href="<?= base_url('jamaah/orders/detail/') ?>${item.idpendaftaran}" class="text-white bg-primary-600 hover:bg-primary-700 px-3 py-1 rounded text-xs font-medium mr-1">Detail</a>
                                 `;
+
+                                // Tambahkan tombol faktur jika ada pembayaran yang sudah dikonfirmasi
+                                if (item.last_payment_id) {
+                                    actionButtons += `
+                                        <a href="<?= base_url('jamaah/faktur/') ?>${item.last_payment_id}" class="text-white bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-xs font-medium" target="_blank">
+                                            <i class="fas fa-file-invoice"></i> Faktur
+                                        </a>
+                                    `;
+                                }
                             } else {
                                 actionButtons = `
-                                    <a href="<?= base_url('jamaah/orders/detail/') ?>${item.idpendaftaran}" class="text-white bg-primary-600 hover:bg-primary-700 px-3 py-1 rounded text-xs font-medium">Detail</a>
+                                    <a href="<?= base_url('jamaah/orders/detail/') ?>${item.idpendaftaran}" class="text-white bg-primary-600 hover:bg-primary-700 px-3 py-1 rounded text-xs font-medium mr-1">Detail</a>
                                 `;
+
+                                // Tambahkan tombol faktur jika ada pembayaran yang sudah dikonfirmasi
+                                if (item.last_payment_id) {
+                                    actionButtons += `
+                                        <a href="<?= base_url('jamaah/faktur/') ?>${item.last_payment_id}" class="text-white bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-xs font-medium" target="_blank">
+                                            <i class="fas fa-file-invoice"></i> Faktur
+                                        </a>
+                                    `;
+                                }
                             }
 
                             row.innerHTML = `
