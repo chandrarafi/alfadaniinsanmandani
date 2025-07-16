@@ -159,6 +159,72 @@
         </div>
     </section>
 
+    <!-- Paket Terbaru Section -->
+    <section class="py-16 md:py-20 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Paket Terbaru</h2>
+                <p class="mt-2 text-xl text-gray-600">Paket perjalanan terbaru dari kami</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <?php
+                // Ambil 3 paket terbaru
+                $latestPaket = array_slice($paket, 0, 3);
+
+                if (!empty($latestPaket)):
+                    foreach ($latestPaket as $item):
+                ?>
+                        <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                            <?php if (!empty($item['foto']) && file_exists(FCPATH . 'uploads/paket/' . $item['foto'])): ?>
+                                <img src="<?= base_url('uploads/paket/' . $item['foto']) ?>" class="w-full h-48 object-cover" alt="<?= $item['namapaket'] ?>">
+                            <?php else: ?>
+                                <img src="<?= base_url('assets/images/gallery/01.png') ?>" class="w-full h-48 object-cover" alt="<?= $item['namapaket'] ?>">
+                            <?php endif; ?>
+                            <div class="p-6">
+                                <div class="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full mb-3">
+                                    <?= $item['namakategori'] ?? 'Umum' ?>
+                                </div>
+                                <span class="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full mb-3 ml-2">
+                                    Baru
+                                </span>
+                                <h3 class="text-xl font-bold text-gray-800 mb-2"><?= $item['namapaket'] ?></h3>
+                                <p class="text-gray-600 mb-4"><?= substr($item['deskripsi'] ?? 'Paket perjalanan dengan pelayanan terbaik', 0, 100) ?>...</p>
+                                <div class="flex items-center text-sm text-gray-500 mb-2">
+                                    <i class="fas fa-calendar-alt mr-2"></i>
+                                    <span>Durasi: <?= $item['durasi'] ?? '-' ?> Hari</span>
+                                </div>
+                                <div class="flex items-center text-sm text-gray-500 mb-4">
+                                    <i class="fas fa-plane-departure mr-2"></i>
+                                    <span>Berangkat: <?= date('d F Y', strtotime($item['waktuberangkat'])) ?></span>
+                                </div>
+                                <p class="text-primary-600 font-bold text-xl mb-4">Rp <?= number_format($item['harga'], 0, ',', '.') ?></p>
+                                <div class="flex space-x-2">
+                                    <a href="<?= base_url('paket/' . $item['idpaket']) ?>" class="block w-full py-2 px-4 border border-primary-600 text-primary-600 text-center rounded-lg hover:bg-primary-50 transition-colors">Detail</a>
+                                    <?php if (session()->get('logged_in')): ?>
+                                        <a href="<?= base_url('jamaah/daftar/' . $item['idpaket']) ?>" class="block w-full py-2 px-4 bg-primary-600 text-white text-center rounded-lg hover:bg-primary-700 transition-colors">Pesan</a>
+                                    <?php else: ?>
+                                        <a href="<?= base_url('auth?redirect=jamaah/daftar/' . $item['idpaket']) ?>" class="block w-full py-2 px-4 bg-primary-600 text-white text-center rounded-lg hover:bg-primary-700 transition-colors">Pesan</a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php
+                    endforeach;
+                else:
+                    ?>
+                    <div class="col-span-3 text-center py-10">
+                        <p class="text-gray-600">Belum ada paket terbaru saat ini.</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="mt-8 text-center">
+                <a href="#paket" class="inline-block py-3 px-6 border border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors">Lihat Semua Paket</a>
+            </div>
+        </div>
+    </section>
+
     <!-- About Section -->
     <section class="py-16 md:py-24" id="tentang">
         <div class="container mx-auto px-4">
@@ -199,63 +265,57 @@
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Paket Perjalanan</h2>
                 <p class="mt-2 text-xl text-gray-600">Pilih paket sesuai dengan kebutuhan Anda</p>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                    <img src="<?= base_url('assets') ?>/images/gallery/01.png" class="w-full h-48 object-cover" alt="Umroh Reguler">
-                    <div class="p-6">
-                        <div class="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full mb-3">Umroh</div>
-                        <h3 class="text-xl font-bold text-gray-800 mb-2">Umroh Reguler</h3>
-                        <p class="text-gray-600 mb-4">Paket umroh dengan pelayanan standar dan fasilitas nyaman.</p>
-                        <div class="flex items-center text-sm text-gray-500 mb-4">
-                            <i class="fas fa-calendar-alt mr-2"></i>
-                            <span>Durasi: 9 Hari</span>
-                        </div>
-                        <p class="text-primary-600 font-bold text-xl mb-4">Rp 25.000.000</p>
-                        <?php if (session()->get('logged_in')): ?>
-                            <a href="<?= base_url('jamaah/daftar/PKT001') ?>" class="block w-full py-2 px-4 bg-primary-600 text-white text-center rounded-lg hover:bg-primary-700 transition-colors">Pesan Sekarang</a>
-                        <?php else: ?>
-                            <a href="<?= base_url('auth?redirect=jamaah/daftar/PKT001') ?>" class="block w-full py-2 px-4 bg-primary-600 text-white text-center rounded-lg hover:bg-primary-700 transition-colors">Pesan Sekarang</a>
-                        <?php endif; ?>
-                    </div>
-                </div>
 
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                    <img src="<?= base_url('assets') ?>/images/gallery/02.png" class="w-full h-48 object-cover" alt="Umroh Plus">
-                    <div class="p-6">
-                        <div class="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full mb-3">Umroh Plus</div>
-                        <h3 class="text-xl font-bold text-gray-800 mb-2">Umroh Plus Turki</h3>
-                        <p class="text-gray-600 mb-4">Paket umroh plus wisata ke Turki dengan pelayanan premium.</p>
-                        <div class="flex items-center text-sm text-gray-500 mb-4">
-                            <i class="fas fa-calendar-alt mr-2"></i>
-                            <span>Durasi: 12 Hari</span>
-                        </div>
-                        <p class="text-primary-600 font-bold text-xl mb-4">Rp 35.000.000</p>
-                        <?php if (session()->get('logged_in')): ?>
-                            <a href="<?= base_url('jamaah/daftar/PKT002') ?>" class="block w-full py-2 px-4 bg-primary-600 text-white text-center rounded-lg hover:bg-primary-700 transition-colors">Pesan Sekarang</a>
-                        <?php else: ?>
-                            <a href="<?= base_url('auth?redirect=jamaah/daftar/PKT002') ?>" class="block w-full py-2 px-4 bg-primary-600 text-white text-center rounded-lg hover:bg-primary-700 transition-colors">Pesan Sekarang</a>
-                        <?php endif; ?>
-                    </div>
+            <!-- Filter Kategori -->
+            <?php if (!empty($kategori)): ?>
+                <div class="flex flex-wrap justify-center gap-2 mb-8">
+                    <button class="kategori-filter px-4 py-2 rounded-full bg-primary-600 text-white hover:bg-primary-700 transition-colors" data-kategori="semua">Semua</button>
+                    <?php foreach ($kategori as $kat): ?>
+                        <button class="kategori-filter px-4 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors" data-kategori="<?= $kat['idkategori'] ?>"><?= $kat['namakategori'] ?></button>
+                    <?php endforeach; ?>
                 </div>
+            <?php endif; ?>
 
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                    <img src="<?= base_url('assets') ?>/images/gallery/03.png" class="w-full h-48 object-cover" alt="Haji Plus">
-                    <div class="p-6">
-                        <div class="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full mb-3">Haji</div>
-                        <h3 class="text-xl font-bold text-gray-800 mb-2">Haji Plus</h3>
-                        <p class="text-gray-600 mb-4">Paket haji plus dengan pelayanan premium dan fasilitas mewah.</p>
-                        <div class="flex items-center text-sm text-gray-500 mb-4">
-                            <i class="fas fa-calendar-alt mr-2"></i>
-                            <span>Durasi: 22 Hari</span>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="paket-container">
+                <?php if (!empty($paket)): ?>
+                    <?php foreach ($paket as $item): ?>
+                        <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 paket-item" data-kategori="<?= $item['kategoriid'] ?>">
+                            <?php if (!empty($item['foto']) && file_exists(FCPATH . 'uploads/paket/' . $item['foto'])): ?>
+                                <img src="<?= base_url('uploads/paket/' . $item['foto']) ?>" class="w-full h-48 object-cover" alt="<?= $item['namapaket'] ?>">
+                            <?php else: ?>
+                                <img src="<?= base_url('assets/images/gallery/01.png') ?>" class="w-full h-48 object-cover" alt="<?= $item['namapaket'] ?>">
+                            <?php endif; ?>
+                            <div class="p-6">
+                                <div class="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full mb-3">
+                                    <?= $item['namakategori'] ?? 'Umum' ?>
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-800 mb-2"><?= $item['namapaket'] ?></h3>
+                                <p class="text-gray-600 mb-4"><?= substr($item['deskripsi'] ?? 'Paket perjalanan dengan pelayanan terbaik', 0, 100) ?>...</p>
+                                <div class="flex items-center text-sm text-gray-500 mb-4">
+                                    <i class="fas fa-calendar-alt mr-2"></i>
+                                    <span>Durasi: <?= $item['durasi'] ?? '-' ?> Hari</span>
+                                </div>
+                                <div class="flex items-center text-sm text-gray-500 mb-4">
+                                    <i class="fas fa-plane-departure mr-2"></i>
+                                    <span>Berangkat: <?= date('d F Y', strtotime($item['waktuberangkat'])) ?></span>
+                                </div>
+                                <p class="text-primary-600 font-bold text-xl mb-4">Rp <?= number_format($item['harga'], 0, ',', '.') ?></p>
+                                <div class="flex space-x-2">
+                                    <a href="<?= base_url('paket/' . $item['idpaket']) ?>" class="block w-full py-2 px-4 border border-primary-600 text-primary-600 text-center rounded-lg hover:bg-primary-50 transition-colors">Detail</a>
+                                    <?php if (session()->get('logged_in')): ?>
+                                        <a href="<?= base_url('jamaah/daftar/' . $item['idpaket']) ?>" class="block w-full py-2 px-4 bg-primary-600 text-white text-center rounded-lg hover:bg-primary-700 transition-colors">Pesan</a>
+                                    <?php else: ?>
+                                        <a href="<?= base_url('auth?redirect=jamaah/daftar/' . $item['idpaket']) ?>" class="block w-full py-2 px-4 bg-primary-600 text-white text-center rounded-lg hover:bg-primary-700 transition-colors">Pesan</a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
-                        <p class="text-primary-600 font-bold text-xl mb-4">Rp 65.000.000</p>
-                        <?php if (session()->get('logged_in')): ?>
-                            <a href="<?= base_url('jamaah/daftar/PKT003') ?>" class="block w-full py-2 px-4 bg-primary-600 text-white text-center rounded-lg hover:bg-primary-700 transition-colors">Pesan Sekarang</a>
-                        <?php else: ?>
-                            <a href="<?= base_url('auth?redirect=jamaah/daftar/PKT003') ?>" class="block w-full py-2 px-4 bg-primary-600 text-white text-center rounded-lg hover:bg-primary-700 transition-colors">Pesan Sekarang</a>
-                        <?php endif; ?>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="col-span-3 text-center py-10">
+                        <p class="text-gray-600">Belum ada paket tersedia saat ini.</p>
                     </div>
-                </div>
+                <?php endif; ?>
             </div>
             <div class="mt-12 text-center">
                 <?php if (session()->get('logged_in')): ?>
@@ -266,6 +326,54 @@
             </div>
         </div>
     </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Filter paket berdasarkan kategori
+            const filterButtons = document.querySelectorAll('.kategori-filter');
+            const paketItems = document.querySelectorAll('.paket-item');
+
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const kategori = this.getAttribute('data-kategori');
+
+                    // Ubah tampilan tombol
+                    filterButtons.forEach(btn => {
+                        btn.classList.remove('bg-primary-600', 'text-white');
+                        btn.classList.add('bg-gray-200', 'text-gray-700');
+                    });
+                    this.classList.remove('bg-gray-200', 'text-gray-700');
+                    this.classList.add('bg-primary-600', 'text-white');
+
+                    // Filter paket
+                    paketItems.forEach(item => {
+                        if (kategori === 'semua' || item.getAttribute('data-kategori') === kategori) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+
+                    // Tampilkan pesan jika tidak ada paket yang sesuai
+                    const visibleItems = document.querySelectorAll('.paket-item[style="display: block;"]');
+                    const paketContainer = document.getElementById('paket-container');
+                    const noItemsMessage = document.getElementById('no-items-message');
+
+                    if (visibleItems.length === 0) {
+                        if (!noItemsMessage) {
+                            const message = document.createElement('div');
+                            message.id = 'no-items-message';
+                            message.className = 'col-span-3 text-center py-10';
+                            message.innerHTML = '<p class="text-gray-600">Tidak ada paket yang tersedia untuk kategori ini.</p>';
+                            paketContainer.appendChild(message);
+                        }
+                    } else if (noItemsMessage) {
+                        noItemsMessage.remove();
+                    }
+                });
+            });
+        });
+    </script>
 
     <!-- Testimonial Section -->
     <section class="py-16 md:py-24" id="testimonial">

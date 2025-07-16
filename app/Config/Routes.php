@@ -6,6 +6,7 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 $routes->get('/', 'Home::index');
+$routes->get('paket/(:segment)', 'Home::detailPaket/$1');
 
 // Authentication Routes
 $routes->get('auth', 'Auth::index');
@@ -88,6 +89,8 @@ $routes->group('admin/laporan', ['filter' => 'auth:admin'], function ($routes) {
     $routes->get('jamaah/cetak', 'Admin\Jamaah::cetakLaporan');
     $routes->get('paket', 'Admin\Laporan::paket');
     $routes->get('get-paket', 'Admin\Laporan::getPaket');
+    $routes->get('paket/export-pdf', 'Admin\Laporan::exportPaketPDF');
+    $routes->get('paket/export-excel', 'Admin\Laporan::exportPaketExcel');
 });
 
 // Admin Routes
