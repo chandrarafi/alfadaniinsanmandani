@@ -72,6 +72,7 @@
                         <a href="<?= base_url('jamaah') ?>" class="px-3 py-2 text-gray-700 hover:text-primary-600">Dashboard</a>
                         <a href="<?= base_url('jamaah/paket') ?>" class="px-3 py-2 text-gray-700 hover:text-primary-600">Paket</a>
                         <a href="<?= base_url('jamaah/dokumen') ?>" class="px-3 py-2 text-gray-700 hover:text-primary-600">Dokumen</a>
+                        <a href="<?= base_url('jamaah/referensi') ?>" class="px-3 py-2 text-gray-700 hover:text-primary-600">Referensi Jamaah</a>
                         <a href="<?= base_url('jamaah/profile') ?>" class="px-3 py-2 text-gray-700 hover:text-primary-600">Profil</a>
                         <a href="<?= base_url('jamaah/orders') ?>" class="px-3 py-2 text-gray-700 hover:text-primary-600">Pemesanan</a>
                         <div class="relative">
@@ -107,6 +108,7 @@
                     <a href="<?= base_url('jamaah') ?>" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100">Dashboard</a>
                     <a href="<?= base_url('jamaah/paket') ?>" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100">Paket</a>
                     <a href="<?= base_url('jamaah/dokumen') ?>" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100">Dokumen</a>
+                    <a href="<?= base_url('jamaah/referensi') ?>" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100">Referensi Jamaah</a>
                     <a href="<?= base_url('jamaah/profile') ?>" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100">Profil</a>
                     <a href="<?= base_url('jamaah/orders') ?>" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100">Pemesanan</a>
                     <a href="<?= base_url('auth/logout') ?>" class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100">Logout</a>

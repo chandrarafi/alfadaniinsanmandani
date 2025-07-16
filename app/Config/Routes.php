@@ -112,6 +112,11 @@ $routes->group('jamaah', ['filter' => 'auth'], function ($routes) {
     $routes->get('pembayaran/(:segment)', 'Jamaah::pembayaran/$1');
     $routes->post('save-pembayaran', 'Jamaah::savePembayaran');
     $routes->post('update-pendaftaran-status/(:segment)', 'Jamaah::updatePendaftaranStatus/$1');
+
+    // Jamaah Referensi routes
+    $routes->get('referensi', 'Jamaah::jamaahReferensi');
+    $routes->get('get-jamaah-referensi', 'Jamaah::getJamaahReferensi');
+    $routes->post('tambah-jamaah-referensi', 'Jamaah::tambahJamaahReferensi');
 });
 
 // Pimpinan Routes

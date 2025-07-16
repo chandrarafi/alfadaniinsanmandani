@@ -322,6 +322,7 @@ class Jamaah extends BaseController
 
         $userId = $this->session->get('id');
         $jamaah = $this->jamaahModel->getJamaahByUserId($userId);
+        $mainJamaah = $this->jamaahModel->where('userid', $userId)->first();
 
         // Daftar dokumen yang diperlukan
         $requiredDocs = [
@@ -337,7 +338,8 @@ class Jamaah extends BaseController
             'title' => 'Pendaftaran Paket',
             'paket' => $paket,
             'jamaah' => $jamaah,
-            'requiredDocs' => $requiredDocs
+            'requiredDocs' => $requiredDocs,
+            'jamaahutama' => $mainJamaah
         ]);
     }
 
@@ -404,6 +406,28 @@ class Jamaah extends BaseController
                 'status' => false,
                 'message' => 'Kuota paket tidak mencukupi'
             ]);
+        }
+
+        // Verifikasi bahwa semua jamaah yang didaftarkan adalah milik user yang login
+        // atau jamaah referensi dari jamaah utama milik user
+        $mainJamaah = $this->jamaahModel->where('userid', $userId)->first();
+        if (!$mainJamaah) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Data jamaah utama tidak ditemukan'
+            ]);
+        }
+
+        foreach ($jamaahIds as $jamaahId) {
+            $jamaah = $this->jamaahModel->find($jamaahId);
+
+            // Jamaah harus milik user yang login atau jamaah referensi dari jamaah utama
+            if (!$jamaah || ($jamaah['userid'] != $userId && $jamaah['ref'] != $mainJamaah['idjamaah'])) {
+                return $this->response->setJSON([
+                    'status' => false,
+                    'message' => 'Terdapat jamaah yang tidak valid dalam pendaftaran'
+                ]);
+            }
         }
 
         // Kurangi kuota paket
@@ -640,14 +664,17 @@ class Jamaah extends BaseController
         }
 
         $userId = $this->session->get('id');
+        // $ref = $this->request->getPost('ref') ?? null;
 
         // Generate ID jamaah baru
         $idJamaah = $this->jamaahModel->getNewId();
 
         // Simpan data jamaah baru
+        $refJamaah = $this->request->getPost('ref_jamaah');
         $dataJamaah = [
             'idjamaah' => $idJamaah,
             'userid' => $userId,
+            'ref' => $refJamaah,
             'nik' => $this->request->getPost('nik'),
             'namajamaah' => $this->request->getPost('nama'),
             'jenkel' => $this->request->getPost('jenkel'),
@@ -683,6 +710,119 @@ class Jamaah extends BaseController
         return $this->response->setJSON([
             'status' => true,
             'message' => 'Data jamaah berhasil ditambahkan',
+            'jamaah' => $jamaah
+        ]);
+    }
+
+    public function tambahJamaahReferensi()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        // Validasi AJAX dinonaktifkan karena sudah menambahkan header X-Requested-With
+        // if (!$this->request->isAJAX()) {
+        //     return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        // }
+
+        $rules = [
+            'ref_jamaah' => 'required', // ID jamaah yang menjadi referensi
+            'nik' => 'required|numeric|min_length[16]|max_length[16]',
+            'nama' => 'required',
+            'jenkel' => 'required|in_list[L,P]',
+            'alamat' => 'required',
+            'nohp' => 'required|numeric'
+        ];
+
+        $messages = [
+            'ref_jamaah' => [
+                'required' => 'ID jamaah referensi harus diisi'
+            ],
+            'nik' => [
+                'required' => 'NIK harus diisi',
+                'numeric' => 'NIK harus berupa angka',
+                'min_length' => 'NIK harus 16 digit',
+                'max_length' => 'NIK harus 16 digit'
+            ],
+            'nama' => [
+                'required' => 'Nama lengkap harus diisi'
+            ],
+            'jenkel' => [
+                'required' => 'Jenis kelamin harus dipilih',
+                'in_list' => 'Jenis kelamin tidak valid'
+            ],
+            'alamat' => [
+                'required' => 'Alamat harus diisi'
+            ],
+            'nohp' => [
+                'required' => 'Nomor HP harus diisi',
+                'numeric' => 'Nomor HP harus berupa angka'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => $this->validator->getErrors()
+            ]);
+        }
+
+        $userId = $this->session->get('id');
+        $refJamaah = $this->request->getPost('ref_jamaah');
+
+        // Verifikasi bahwa jamaah referensi adalah milik user yang login
+        $jamaahRef = $this->jamaahModel->find($refJamaah);
+        if (!$jamaahRef || $jamaahRef['userid'] != $userId) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Jamaah referensi tidak valid'
+            ]);
+        }
+
+        // Generate ID jamaah baru
+        $idJamaah = $this->jamaahModel->getNewId();
+
+        // Simpan data jamaah baru dengan referensi
+        $dataJamaah = [
+            'idjamaah' => $idJamaah,
+            'userid' => null, // Jamaah referensi tidak memiliki userid sendiri
+            'ref' => $refJamaah, // Set referensi ke jamaah utama
+            'nik' => $this->request->getPost('nik'),
+            'namajamaah' => $this->request->getPost('nama'),
+            'jenkel' => $this->request->getPost('jenkel'),
+            'alamat' => $this->request->getPost('alamat'),
+            'nohpjamaah' => $this->request->getPost('nohp'),
+            'emailjamaah' => $this->request->getPost('email') ?? null,
+            'status' => true
+        ];
+
+        $this->jamaahModel->insert($dataJamaah);
+
+        // Upload dokumen jamaah jika ada
+        $dokumenFiles = $this->request->getFiles();
+        if (!empty($dokumenFiles) && isset($dokumenFiles['dokumen'])) {
+            foreach ($dokumenFiles['dokumen'] as $namaDokumen => $file) {
+                if ($file->isValid() && !$file->hasMoved()) {
+                    $newName = $file->getRandomName();
+                    $file->move(ROOTPATH . 'public/uploads/dokumen', $newName);
+
+                    $dataDokumen = [
+                        'idjamaah' => $idJamaah,
+                        'namadokumen' => $namaDokumen,
+                        'file' => $newName
+                    ];
+
+                    $this->dokumenModel->simpan($dataDokumen);
+                }
+            }
+        }
+
+        $jamaah = $this->jamaahModel->find($idJamaah);
+
+        return $this->response->setJSON([
+            'status' => true,
+            'message' => 'Data jamaah referensi berhasil ditambahkan',
             'jamaah' => $jamaah
         ]);
     }
@@ -764,6 +904,11 @@ class Jamaah extends BaseController
             return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
         }
 
+        // Validasi AJAX dinonaktifkan karena sudah menambahkan header X-Requested-With
+        // if (!$this->request->isAJAX()) {
+        //     return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        // }
+
         $dokumen = $this->dokumenModel->getDokumenByJamaahId($jamaahId);
 
         return $this->response->setJSON([
@@ -783,8 +928,8 @@ class Jamaah extends BaseController
 
         $userId = $this->session->get('id');
 
-        // Ambil semua jamaah yang terkait dengan user ini
-        $jamaahList = $this->jamaahModel->where('userid', $userId)->findAll();
+        // Ambil semua jamaah yang terkait dengan user ini (jamaah utama dan referensi)
+        $jamaahList = $this->jamaahModel->getAllRelatedJamaah($userId);
 
         return view('jamaah/dokumen', [
             'title' => 'Dokumen Jamaah',
@@ -906,39 +1051,97 @@ class Jamaah extends BaseController
     // Method untuk memeriksa pendaftaran yang sudah expired
     public function checkExpiredPendaftaran()
     {
-        // Cek apakah user adalah admin
-        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'admin') {
-            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
-        }
-
-        // Ambil semua pendaftaran yang sudah expired tapi masih pending
-        $expiredPendaftaran = $this->pendaftaranModel->getExpiredPendaftaran();
-        $cancelledCount = 0;
+        // Cek pendaftaran yang sudah expired tapi belum diupdate statusnya
+        $now = date('Y-m-d H:i:s');
+        $expiredPendaftaran = $this->pendaftaranModel->where('status', 'pending')
+            ->where('expired_at <', $now)
+            ->findAll();
 
         foreach ($expiredPendaftaran as $pendaftaran) {
-            // Hitung jumlah jamaah dalam pendaftaran
-            $detailPendaftaran = $this->detailPendaftaranModel->where('idpendaftaran', $pendaftaran['idpendaftaran'])->findAll();
-            $jamaahCount = count($detailPendaftaran);
-
-            // Batalkan pendaftaran
-            $this->pendaftaranModel->cancelExpiredPendaftaran($pendaftaran['idpendaftaran']);
-
-            // Kembalikan kuota paket
-            $this->paketModel->restoreQuota($pendaftaran['paketid'], $jamaahCount);
-
-            // Kirim notifikasi melalui WebSocket
-            $this->sendToWebSocket([
-                'type' => 'pendaftaran_cancelled',
-                'pendaftaran_id' => $pendaftaran['idpendaftaran'],
-                'message' => 'Pendaftaran dibatalkan karena waktu pembayaran telah habis'
+            // Update status pendaftaran menjadi expired
+            $this->pendaftaranModel->update($pendaftaran['idpendaftaran'], [
+                'status' => 'expired'
             ]);
 
-            $cancelledCount++;
+            // Kembalikan kuota paket
+            $detailPendaftaran = $this->detailPendaftaranModel->where('idpendaftaran', $pendaftaran['idpendaftaran'])->findAll();
+            $jamaahCount = count($detailPendaftaran);
+            $this->paketModel->increaseQuota($pendaftaran['paketid'], $jamaahCount);
+
+            // Kirim notifikasi via WebSocket
+            $this->sendToWebSocket([
+                'type' => 'pendaftaran_expired',
+                'pendaftaran_id' => $pendaftaran['idpendaftaran']
+            ]);
         }
 
         return $this->response->setJSON([
             'status' => true,
-            'message' => "{$cancelledCount} pendaftaran telah dibatalkan karena waktu pembayaran habis"
+            'message' => 'Berhasil memeriksa pendaftaran yang expired',
+            'expired_count' => count($expiredPendaftaran)
+        ]);
+    }
+
+    public function getJamaahReferensi()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $userId = $this->session->get('id');
+
+        // Dapatkan jamaah utama
+        $mainJamaah = $this->jamaahModel->where('userid', $userId)->first();
+
+        if (!$mainJamaah) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Data jamaah utama tidak ditemukan'
+            ]);
+        }
+
+        // Dapatkan semua jamaah referensi
+        $jamaahReferensi = $this->jamaahModel->where('ref', $mainJamaah['idjamaah'])->findAll();
+
+        return $this->response->setJSON([
+            'status' => true,
+            'data' => [
+                'main_jamaah' => $mainJamaah,
+                'referensi' => $jamaahReferensi
+            ]
+        ]);
+    }
+
+    public function jamaahReferensi()
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            // Simpan halaman yang ingin diakses
+            $this->session->set('last_page', current_url());
+            return redirect()->to('auth');
+        }
+
+        $userId = $this->session->get('id');
+
+        // Dapatkan jamaah utama
+        $mainJamaah = $this->jamaahModel->where('userid', $userId)->first();
+
+        if (!$mainJamaah) {
+            return redirect()->to('jamaah/profile')->with('error', 'Data jamaah utama tidak ditemukan');
+        }
+
+        // Dapatkan semua jamaah referensi
+        $jamaahReferensi = $this->jamaahModel->where('ref', $mainJamaah['idjamaah'])->findAll();
+
+        return view('jamaah/referensi/index', [
+            'title' => 'Jamaah Referensi',
+            'mainJamaah' => $mainJamaah,
+            'jamaahReferensi' => $jamaahReferensi
         ]);
     }
 }

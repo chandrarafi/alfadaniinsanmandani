@@ -132,10 +132,27 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
+
+        <!-- Tabs -->
+        <div class="border-b border-gray-200">
+            <nav class="flex -mb-px" aria-label="Tabs">
+                <button type="button" id="tab-jamaah-baru" class="tab-btn tab-active py-4 px-6 border-b-2 border-primary-500 font-medium text-primary-600">
+                    Jamaah Baru
+                </button>
+                <button type="button" id="tab-jamaah-referensi" class="tab-btn py-4 px-6 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    Jamaah Referensi
+                </button>
+            </nav>
+        </div>
+
         <div class="p-6">
-            <form id="formTambahJamaah" class="space-y-4">
+            <!-- Form Tambah Jamaah Baru -->
+            <form id="formTambahJamaah" class="space-y-4 tab-content" data-tab="jamaah-baru">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
+
+                        <input type="hidden" name="ref_jamaah" value="<?= $jamaahutama['idjamaah'] ?>">
+
                         <label for="nik" class="block text-sm font-medium text-gray-700 mb-1">NIK</label>
                         <input type="text" id="nik" name="nik" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
                     </div>
@@ -170,6 +187,38 @@
                     <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">Simpan</button>
                 </div>
             </form>
+
+            <!-- Jamaah Referensi -->
+            <div id="jamaahReferensiContainer" class="tab-content hidden" data-tab="jamaah-referensi">
+                <div id="loadingReferensi" class="py-6 text-center">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
+                    <p class="mt-2 text-gray-600">Memuat data jamaah referensi...</p>
+                </div>
+
+                <div id="errorReferensi" class="py-6 text-center hidden">
+                    <div class="text-red-500 mb-2">
+                        <i class="fas fa-exclamation-circle text-3xl"></i>
+                    </div>
+                    <p class="text-gray-600">Gagal memuat data jamaah referensi.</p>
+                    <button id="btnReloadReferensi" class="mt-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                        Coba Lagi
+                    </button>
+                </div>
+
+                <div id="emptyReferensi" class="py-6 text-center hidden">
+                    <div class="text-gray-400 mb-2">
+                        <i class="fas fa-users text-3xl"></i>
+                    </div>
+                    <p class="text-gray-600">Anda belum memiliki jamaah referensi.</p>
+                    <a href="<?= base_url('jamaah/referensi') ?>" class="inline-block mt-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                        Tambah Jamaah Referensi
+                    </a>
+                </div>
+
+                <div id="listReferensi" class="space-y-4 hidden">
+                    <!-- Jamaah referensi akan ditampilkan di sini -->
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -195,15 +244,175 @@
         // Modal Tambah Jamaah
         $('#btnTambahJamaah').click(function() {
             $('#modalTambahJamaah').removeClass('hidden');
+            // Set default tab to "Jamaah Baru"
+            $('.tab-btn').removeClass('tab-active border-primary-500 text-primary-600').addClass('border-transparent text-gray-500');
+            $('#tab-jamaah-baru').removeClass('border-transparent text-gray-500').addClass('tab-active border-primary-500 text-primary-600');
+            $('.tab-content').addClass('hidden');
+            $('[data-tab="jamaah-baru"]').removeClass('hidden');
         });
 
         $('.close-modal').click(function() {
             $('#modalTambahJamaah').addClass('hidden');
         });
 
+        // Tab functionality
+        $('.tab-btn').click(function() {
+            const targetTab = $(this).attr('id').replace('tab-', '');
+
+            // Update tab buttons
+            $('.tab-btn').removeClass('tab-active border-primary-500 text-primary-600').addClass('border-transparent text-gray-500');
+            $(this).removeClass('border-transparent text-gray-500').addClass('tab-active border-primary-500 text-primary-600');
+
+            // Show target tab content
+            $('.tab-content').addClass('hidden');
+            $('[data-tab="' + targetTab + '"]').removeClass('hidden');
+
+            // Load jamaah referensi data if needed
+            if (targetTab === 'jamaah-referensi') {
+                loadJamaahReferensi();
+            }
+        });
+
+        // Load jamaah referensi
+        function loadJamaahReferensi() {
+            $('#loadingReferensi').removeClass('hidden');
+            $('#errorReferensi').addClass('hidden');
+            $('#emptyReferensi').addClass('hidden');
+            $('#listReferensi').addClass('hidden').empty();
+
+            $.ajax({
+                url: '<?= base_url('jamaah/get-jamaah-referensi') ?>',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    $('#loadingReferensi').addClass('hidden');
+
+                    if (response.status) {
+                        const data = response.data;
+
+                        if (data.referensi.length > 0) {
+                            let html = '';
+
+                            $.each(data.referensi, function(index, jamaah) {
+                                html += `
+                                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <h4 class="font-medium text-gray-800">${jamaah.namajamaah}</h4>
+                                                <p class="text-sm text-gray-600 mt-1">NIK: ${jamaah.nik}</p>
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                                    <div>
+                                                        <p class="text-sm text-gray-600">
+                                                            <span class="font-medium">Jenis Kelamin:</span> 
+                                                            ${jamaah.jenkel === 'L' ? 'Laki-laki' : 'Perempuan'}
+                                                        </p>
+                                                        <p class="text-sm text-gray-600">
+                                                            <span class="font-medium">No. HP:</span> 
+                                                            ${jamaah.nohpjamaah}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-sm text-gray-600">
+                                                            <span class="font-medium">Alamat:</span> 
+                                                            ${jamaah.alamat}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn-pilih-referensi px-4 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors" data-id="${jamaah.idjamaah}" data-nama="${jamaah.namajamaah}" data-nik="${jamaah.nik}">
+                                                Pilih
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+
+                            $('#listReferensi').html(html).removeClass('hidden');
+                        } else {
+                            $('#emptyReferensi').removeClass('hidden');
+                        }
+                    } else {
+                        $('#errorReferensi').removeClass('hidden');
+                    }
+                },
+                error: function() {
+                    $('#loadingReferensi').addClass('hidden');
+                    $('#errorReferensi').removeClass('hidden');
+                }
+            });
+        }
+
+        // Reload jamaah referensi
+        $(document).on('click', '#btnReloadReferensi', function() {
+            loadJamaahReferensi();
+        });
+
+        // Pilih jamaah referensi
+        $(document).on('click', '.btn-pilih-referensi', function() {
+            const jamaahId = $(this).data('id');
+            const jamaahNama = $(this).data('nama');
+            const jamaahNik = $(this).data('nik');
+
+            // Tambahkan jamaah ke list
+            const jamaahCount = parseInt($('#jamaah_count').val()) + 1;
+
+            const jamaahHtml = `
+                <div class="jamaah-item border border-gray-200 rounded-lg p-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-medium text-gray-700">Jamaah ${jamaahCount} (Referensi)</h4>
+                        <button type="button" class="btn-remove-jamaah text-red-600 hover:text-red-800">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <input type="hidden" name="jamaah_ids[]" value="${jamaahId}">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" value="${jamaahNama}" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">NIK</label>
+                            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" value="${jamaahNik}" readonly>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            $('#jamaahList').append(jamaahHtml);
+            $('#jamaah_count').val(jamaahCount);
+
+            // Update total harga
+            const totalHarga = <?= $paket['harga'] ?> * jamaahCount;
+            $('#total_bayar').val(totalHarga);
+            $('#total_harga_display').val('Rp ' + formatRupiah(totalHarga));
+
+            // Update uang muka minimal (30%)
+            const minimalDP = totalHarga * 0.3;
+            $('#uang_muka').attr('min', minimalDP).val(minimalDP);
+            $('#uang_muka').next('p').text('Minimal Rp ' + formatRupiah(minimalDP));
+
+            // Update sisa bayar
+            const sisaBayar = totalHarga - minimalDP;
+            $('#sisa_bayar').val('Rp ' + formatRupiah(sisaBayar));
+
+            // Tutup modal
+            $('#modalTambahJamaah').addClass('hidden');
+
+            // Tampilkan notifikasi
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil',
+                text: 'Jamaah referensi berhasil ditambahkan',
+                confirmButtonColor: '#4F46E5',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        });
+
         // Submit form tambah jamaah
         $('#formTambahJamaah').submit(function(e) {
             e.preventDefault();
+
 
             $.ajax({
                 url: '<?= base_url('jamaah/tambah-jamaah') ?>',
@@ -252,53 +461,37 @@
                                             <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" value="${jamaah.nik}" readonly>
                                         </div>
                                     </div>
-
-                                    <!-- Informasi Dokumen -->
-                                    <div class="mt-3">
-                                        <div class="bg-blue-50 border-l-4 border-blue-400 p-3 text-blue-700">
-                                            <p class="text-sm">Dokumen yang diperlukan dapat diupload nanti melalui dashboard jamaah.</p>
-                                        </div>
-                                    </div>
                                 </div>
                             `;
 
                             $('#jamaahList').append(jamaahHtml);
                             $('#jamaah_count').val(jamaahCount);
 
-                            // Update total bayar
-                            const hargaPerJamaah = <?= $paket['harga'] ?>;
-                            const totalBayar = hargaPerJamaah * jamaahCount;
-                            $('#total_bayar').val(totalBayar);
-                            $('#total_harga_display').val('Rp ' + formatRupiah(totalBayar));
+                            // Update total harga
+                            const totalHarga = <?= $paket['harga'] ?> * jamaahCount;
+                            $('#total_bayar').val(totalHarga);
+                            $('#total_harga_display').val('Rp ' + formatRupiah(totalHarga));
 
-                            // Update uang muka minimum
-                            const minUangMuka = totalBayar * 0.3;
-                            $('#uang_muka').attr('min', minUangMuka);
-                            $('#uang_muka').val(minUangMuka);
-                            $('#uang_muka').next('p').text('Minimal Rp ' + formatRupiah(minUangMuka));
+                            // Update uang muka minimal (30%)
+                            const minimalDP = totalHarga * 0.3;
+                            $('#uang_muka').attr('min', minimalDP).val(minimalDP);
+                            $('#uang_muka').next('p').text('Minimal Rp ' + formatRupiah(minimalDP));
 
                             // Update sisa bayar
-                            const sisaBayar = totalBayar - minUangMuka;
+                            const sisaBayar = totalHarga - minimalDP;
                             $('#sisa_bayar').val('Rp ' + formatRupiah(sisaBayar));
 
-                            // Reset form dan tutup modal
+                            // Reset form
                             $('#formTambahJamaah')[0].reset();
+
+                            // Tutup modal
                             $('#modalTambahJamaah').addClass('hidden');
                         });
                     } else {
-                        let errorMessage = '';
-                        if (response.errors) {
-                            $.each(response.errors, function(key, value) {
-                                errorMessage += value + '<br>';
-                            });
-                        } else {
-                            errorMessage = response.message;
-                        }
-
                         Swal.fire({
                             icon: 'error',
                             title: 'Gagal',
-                            html: errorMessage,
+                            text: response.message,
                             confirmButtonColor: '#4F46E5'
                         });
                     }
@@ -321,34 +514,33 @@
             Swal.fire({
                 title: 'Konfirmasi',
                 text: 'Apakah Anda yakin ingin menghapus jamaah ini?',
-                icon: 'warning',
+                icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#4F46E5',
-                cancelButtonColor: '#d33',
                 confirmButtonText: 'Ya, Hapus',
-                cancelButtonText: 'Batal'
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#EF4444',
+                cancelButtonColor: '#6B7280'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    // Hapus jamaah dari list
                     jamaahItem.remove();
 
-                    // Update jumlah jamaah
-                    const jamaahCount = $('#jamaahList .jamaah-item').length;
+                    // Update jamaah count
+                    const jamaahCount = $('.jamaah-item').length;
                     $('#jamaah_count').val(jamaahCount);
 
-                    // Update total bayar
-                    const hargaPerJamaah = <?= $paket['harga'] ?>;
-                    const totalBayar = hargaPerJamaah * jamaahCount;
-                    $('#total_bayar').val(totalBayar);
-                    $('#total_harga_display').val('Rp ' + formatRupiah(totalBayar));
+                    // Update total harga
+                    const totalHarga = <?= $paket['harga'] ?> * jamaahCount;
+                    $('#total_bayar').val(totalHarga);
+                    $('#total_harga_display').val('Rp ' + formatRupiah(totalHarga));
 
-                    // Update uang muka minimum
-                    const minUangMuka = totalBayar * 0.3;
-                    $('#uang_muka').attr('min', minUangMuka);
-                    $('#uang_muka').val(minUangMuka);
-                    $('#uang_muka').next('p').text('Minimal Rp ' + formatRupiah(minUangMuka));
+                    // Update uang muka minimal (30%)
+                    const minimalDP = totalHarga * 0.3;
+                    $('#uang_muka').attr('min', minimalDP).val(minimalDP);
+                    $('#uang_muka').next('p').text('Minimal Rp ' + formatRupiah(minimalDP));
 
                     // Update sisa bayar
-                    const sisaBayar = totalBayar - minUangMuka;
+                    const sisaBayar = totalHarga - minimalDP;
                     $('#sisa_bayar').val('Rp ' + formatRupiah(sisaBayar));
                 }
             });
@@ -358,16 +550,22 @@
         $('#formPendaftaran').submit(function(e) {
             e.preventDefault();
 
-            // Gunakan FormData untuk upload file
-            const formData = new FormData(this);
+            // Validasi jumlah jamaah
+            if ($('.jamaah-item').length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validasi Gagal',
+                    text: 'Mohon tambahkan minimal 1 jamaah',
+                    confirmButtonColor: '#4F46E5'
+                });
+                return;
+            }
 
             $.ajax({
                 url: '<?= base_url('jamaah/save-pendaftaran') ?>',
                 type: 'POST',
-                data: formData,
+                data: $(this).serialize(),
                 dataType: 'json',
-                contentType: false,
-                processData: false,
                 beforeSend: function() {
                     // Tampilkan loading
                     Swal.fire({
@@ -390,19 +588,10 @@
                             window.location.href = response.redirect;
                         });
                     } else {
-                        let errorMessage = '';
-                        if (response.errors) {
-                            $.each(response.errors, function(key, value) {
-                                errorMessage += value + '<br>';
-                            });
-                        } else {
-                            errorMessage = response.message;
-                        }
-
                         Swal.fire({
                             icon: 'error',
                             title: 'Gagal',
-                            html: errorMessage,
+                            text: response.message,
                             confirmButtonColor: '#4F46E5'
                         });
                     }

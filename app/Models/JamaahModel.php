@@ -9,7 +9,7 @@ class JamaahModel extends Model
     protected $table = 'jamaah';
     protected $primaryKey = 'idjamaah';
     protected $useAutoIncrement = false;
-    protected $allowedFields = ['idjamaah', 'userid', 'nik', 'namajamaah', 'jenkel', 'alamat', 'emailjamaah', 'nohpjamaah', 'status'];
+    protected $allowedFields = ['idjamaah', 'userid', 'ref', 'nik', 'namajamaah', 'jenkel', 'alamat', 'emailjamaah', 'nohpjamaah', 'status'];
     protected $useTimestamps = true;
     protected $dateFormat = 'datetime';
     protected $createdField = 'created_at';
@@ -57,6 +57,60 @@ class JamaahModel extends Model
     {
         return $this->where('userid', $userid)->first();
     }
+
+    // Mendapatkan jamaah berdasarkan referensi
+    public function getJamaahByRef($ref)
+    {
+        return $this->where('ref', $ref)
+            ->orderBy('idjamaah', 'ASC')
+            ->findAll();
+    }
+
+    // Mendapatkan semua jamaah yang terkait dengan user (sebagai jamaah utama atau referensi)
+    public function getAllRelatedJamaah($userid)
+    {
+        // Dapatkan jamaah utama
+        $mainJamaah = $this->where('userid', $userid)->first();
+
+        if (!$mainJamaah) {
+            return [];
+        }
+
+        // Dapatkan semua jamaah yang direferensikan oleh jamaah utama
+        $relatedJamaah = $this->where('ref', $mainJamaah['idjamaah'])->findAll();
+
+        // Gabungkan jamaah utama dengan jamaah yang direferensikan
+        $allJamaah = array_merge([$mainJamaah], $relatedJamaah);
+
+        return $allJamaah;
+    }
+
+    // Mendapatkan jamaah berdasarkan referensi
+    // public function getJamaahByRef($ref)
+    // {
+    //     return $this->where('ref', $ref)
+    //         ->orderBy('idjamaah', 'ASC')
+    //         ->findAll();
+    // }
+
+    // Mendapatkan semua jamaah yang terkait dengan user (sebagai jamaah utama atau referensi)
+    // public function getAllRelatedJamaah($userid)
+    // {
+    //     // Dapatkan jamaah utama
+    //     $mainJamaah = $this->where('userid', $userid)->first();
+
+    //     if (!$mainJamaah) {
+    //         return [];
+    //     }
+
+    //     // Dapatkan semua jamaah yang direferensikan oleh jamaah utama
+    //     $relatedJamaah = $this->where('ref', $mainJamaah['idjamaah'])->findAll();
+
+    //     // Gabungkan jamaah utama dengan jamaah yang direferensikan
+    //     $allJamaah = array_merge([$mainJamaah], $relatedJamaah);
+
+    //     return $allJamaah;
+    // }
 
     // Mendapatkan jamaah aktif
     public function getActiveJamaah()
