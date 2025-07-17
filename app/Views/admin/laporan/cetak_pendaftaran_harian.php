@@ -152,7 +152,7 @@
         <tbody>
             <?php if (empty($pendaftaran)): ?>
                 <tr>
-                    <td colspan="7" class="text-center">Tidak ada data pendaftaran</td>
+                    <td colspan="6" class="text-center">Tidak ada data pendaftaran</td>
                 </tr>
                 <?php else:
                 $no = 1;
@@ -174,7 +174,7 @@
                     </tr>
                 <?php endforeach; ?>
                 <tr>
-                    <td colspan="5" class="text-center"><b>Total</b></td>
+                    <td colspan="4" class="text-center"><b>Total</b></td>
                     <td class="text-right"><b>Rp <?= number_format($total_bayar, 0, ',', '.'); ?></b></td>
                     <td class="text-right"><b>Rp <?= number_format(abs($total_sisa), 0, ',', '.'); ?></b></td>
                 </tr>
