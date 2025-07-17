@@ -142,7 +142,7 @@
             <tr>
                 <th>No</th>
                 <th>ID Pendaftaran</th>
-                <th>Tanggal Daftar</th>
+                <!-- <th>Tanggal Daftar</th> -->
                 <th>Nama Jamaah</th>
                 <th>Nama Paket</th>
                 <th>Total Bayar</th>
@@ -161,21 +161,22 @@
                 foreach ($pendaftaran as $item):
                     $total_bayar += $item['total_bayar'];
                     $total_sisa += $item['sisa'];
+                    $display_sisa = abs($item['sisa']); // Use absolute value to remove minus sign
                 ?>
                     <tr>
                         <td><?= $no++; ?></td>
                         <td><?= $item['id_pendaftaran']; ?></td>
-                        <td><?= $item['tanggal_daftar']; ?></td>
+                        <!-- <td><?= $item['tanggal_daftar']; ?></td> -->
                         <td class="text-left"><?= $item['nama_jamaah']; ?></td>
                         <td class="text-left"><?= $item['nama_paket']; ?></td>
                         <td class="text-right">Rp <?= number_format($item['total_bayar'], 0, ',', '.'); ?></td>
-                        <td class="text-right">Rp <?= number_format($item['sisa'], 0, ',', '.'); ?></td>
+                        <td class="text-right">Rp <?= number_format($display_sisa, 0, ',', '.'); ?></td>
                     </tr>
                 <?php endforeach; ?>
                 <tr>
                     <td colspan="5" class="text-center"><b>Total</b></td>
                     <td class="text-right"><b>Rp <?= number_format($total_bayar, 0, ',', '.'); ?></b></td>
-                    <td class="text-right"><b>Rp <?= number_format($total_sisa, 0, ',', '.'); ?></b></td>
+                    <td class="text-right"><b>Rp <?= number_format(abs($total_sisa), 0, ',', '.'); ?></b></td>
                 </tr>
             <?php endif; ?>
         </tbody>
