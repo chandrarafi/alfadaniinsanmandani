@@ -45,6 +45,8 @@
         .filter-info {
             margin-top: 20px;
             margin-bottom: 10px;
+            text-align: left;
+            font-weight: bold;
         }
 
         table.content-table {
@@ -127,9 +129,12 @@
             <div>
                 <div class="company-name">Haji Umroh PT.Alfadani Insan Madani</div>
                 <div class="report-title">Laporan Pendaftaran Per Tanggal</div>
-                <div class="report-date">Periode: <?= $tanggal_awal ?> s/d <?= $tanggal_akhir ?></div>
             </div>
         </div>
+    </div>
+
+    <div class="filter-info">
+        Tanggal: <?= $tanggal_awal ?> s/d <?= $tanggal_akhir ?>
     </div>
 
     <table class="content-table">
@@ -177,7 +182,7 @@
     </table>
 
     <div class="footer">
-        <div>Kendal, <?= date('d-m-Y') ?></div>
+        <div>Padang, <?= date('d-m-Y') ?></div>
         <div class="signature">Pimpinan</div>
     </div>
 

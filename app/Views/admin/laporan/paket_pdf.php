@@ -115,7 +115,7 @@
     </table>
 
     <div class="footer">
-        <div>Kendal, <?= date('d-m-Y'); ?></div>
+        <div>Padang, <?= date('d-m-Y'); ?></div>
         <div class="signature">Pimpinan</div>
     </div>
 </body>

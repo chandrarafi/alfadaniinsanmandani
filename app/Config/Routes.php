@@ -102,6 +102,10 @@ $routes->group('admin/laporan', ['filter' => 'auth:admin'], function ($routes) {
     $routes->post('pembayaran/harian', 'Admin\Laporan::pembayaranHarian');
     $routes->post('pembayaran/bulanan', 'Admin\Laporan::pembayaranBulanan');
     $routes->post('pembayaran/tahunan', 'Admin\Laporan::pembayaranTahunan');
+
+    // Laporan Keberangkatan Grup
+    $routes->get('keberangkatan-grup', 'Admin\Laporan::keberangkatanGrup');
+    $routes->get('keberangkatan-grup/cetak', 'Admin\Laporan::cetakKeberangkatanGrup');
 });
 
 // Admin Routes

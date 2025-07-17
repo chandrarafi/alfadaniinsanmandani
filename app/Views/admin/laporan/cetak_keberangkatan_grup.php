@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?></title>
+    <title>Laporan Keberangkatan Grup</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -64,6 +64,18 @@
             background-color: #f9f9f9;
         }
 
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
         .footer {
             margin-top: 30px;
             text-align: right;
@@ -109,7 +121,7 @@
             <img src="<?= $logo; ?>" alt="Logo" class="logo">
             <div>
                 <div class="company-name">Haji Umroh PT.Alfadani Insan Madani</div>
-                <div class="report-title">Laporan Paket Haji Dan Umroh</div>
+                <div class="report-title">Jadwal Keberangkatan/grup</div>
                 <!-- <div class="report-date">Tanggal: <?= $tanggal ?></div> -->
             </div>
         </div>
@@ -119,30 +131,31 @@
         <thead>
             <tr>
                 <th>No</th>
-                <th>Nama Paket</th>
-                <th>Kategori</th>
-                <th>Durasi Perjalanan</th>
-                <th>Harga Paket</th>
-                <th>Kapasitas</th>
-                <th>Tanggal Keberangkatan</th>
+                <th>ID Group/Jadwal</th>
+                <th>Nama Group Keberangkatan</th>
+                <th>Jenis Perjalanan</th>
+                <th>Nama Paket Perjalanan</th>
+                <th>Tanggal Pembuatan Jadwal</th>
+                <th>Status Jadwal</th>
             </tr>
         </thead>
         <tbody>
-            <?php if (empty($paket)): ?>
+            <?php if (empty($grup_keberangkatan)): ?>
                 <tr>
-                    <td colspan="7">Tidak ada data paket</td>
+                    <td colspan="7" class="text-center">Tidak ada data keberangkatan grup</td>
                 </tr>
-            <?php else: ?>
-                <?php $no = 1; ?>
-                <?php foreach ($paket as $item): ?>
+                <?php else:
+                $no = 1;
+                foreach ($grup_keberangkatan as $item):
+                ?>
                     <tr>
                         <td><?= $no++; ?></td>
-                        <td><?= $item['namapaket']; ?></td>
-                        <td><?= $item['namakategori']; ?></td>
-                        <td><?= isset($item['durasi']) ? $item['durasi'] . ' hari' : '-'; ?></td>
-                        <td>Rp <?= number_format($item['harga'], 0, ',', '.'); ?></td>
-                        <td><?= isset($item['kuota']) ? $item['kuota'] . ' orang' : '-'; ?></td>
-                        <td><?= $item['waktuberangkat_formatted']; ?></td>
+                        <td><?= $item['id_grup']; ?></td>
+                        <td class="text-left"><?= $item['nama_grup']; ?></td>
+                        <td><?= $item['jenis_perjalanan']; ?></td>
+                        <td class="text-left"><?= $item['nama_paket']; ?></td>
+                        <td><?= $item['tanggal_pembuatan']; ?></td>
+                        <td><?= $item['status']; ?></td>
                     </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -153,6 +166,13 @@
         <div>Padang, <?= $tanggal ?></div>
         <div class="signature">Pimpinan</div>
     </div>
+
+    <script>
+        window.onload = function() {
+            // Auto fokus ke tombol cetak
+            document.querySelector('.print-button').focus();
+        }
+    </script>
 
     <?php if (isset($print_view) && $print_view): ?>
         <script>

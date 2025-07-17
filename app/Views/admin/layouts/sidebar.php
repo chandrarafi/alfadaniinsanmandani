@@ -79,6 +79,8 @@
                     </li>
                     <li> <a href="<?= base_url('admin/laporan/pembayaran') ?>"><i class="bx bx-right-arrow-alt"></i>Laporan Pembayaran</a>
                     </li>
+                    <li> <a href="<?= base_url('admin/laporan/keberangkatan-grup') ?>"><i class="bx bx-right-arrow-alt"></i>Laporan Keberangkatan Grup</a>
+                    </li>
                 </ul>
             </li>
         <?php endif; ?>

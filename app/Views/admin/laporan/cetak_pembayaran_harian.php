@@ -45,6 +45,8 @@
         .filter-info {
             margin-top: 20px;
             margin-bottom: 10px;
+            text-align: left;
+            font-weight: bold;
         }
 
         table.content-table {
@@ -126,19 +128,13 @@
             <img src="<?= base_url('assets/images/applogo.png'); ?>" alt="Logo" class="logo">
             <div>
                 <div class="company-name">Haji Dan Umroh PT Aladani Insan Madani</div>
-                <div class="report-title">Laporan Pembayaran</div>
-                <div class="report-title">Per Tanggal</div>
+                <div class="report-title">Laporan Pembayaran Per Tanggal</div>
             </div>
         </div>
     </div>
 
     <div class="filter-info">
-        <table>
-            <tr>
-                <td>Tanggal</td>
-                <td>: <?= $tanggal_awal ?> s/d <?= $tanggal_akhir ?></td>
-            </tr>
-        </table>
+        Periode: <?= $tanggal_awal ?> s/d <?= $tanggal_akhir ?>
     </div>
 
     <table class="content-table">
@@ -184,7 +180,7 @@
     </table>
 
     <div class="footer">
-        <div>Padang, <?= date('Y-m-d') ?></div>
+        <div>Padang, <?= date('d-m-Y') ?></div>
         <div class="signature">Pimpinan</div>
     </div>
 

@@ -489,4 +489,57 @@ class Laporan extends BaseController
 
         return $builder->get()->getResultArray();
     }
+
+    // Laporan Keberangkatan Grup
+    public function keberangkatanGrup()
+    {
+        $data = [
+            'title' => 'Laporan Keberangkatan Grup',
+            'user' => session()->get()
+        ];
+        return view('admin/laporan/keberangkatan_grup', $data);
+    }
+
+    // Proses laporan keberangkatan grup
+    public function cetakKeberangkatanGrup()
+    {
+        // Ambil data paket dengan waktu keberangkatan yang sudah dijadwalkan
+        $paketData = $this->paketModel->where('waktuberangkat !=', null)
+            ->orderBy('waktuberangkat', 'ASC')
+            ->findAll();
+
+        // Siapkan data grup keberangkatan
+        $grupKeberangkatan = [];
+        foreach ($paketData as $paket) {
+            // Dapatkan kategori paket
+            $kategori = $this->kategoriModel->find($paket['kategoriid']);
+            $jenisPaket = $kategori ? $kategori['namakategori'] : '-';
+
+            // Format tanggal keberangkatan
+            $tanggalKeberangkatan = date('d/m/Y', strtotime($paket['waktuberangkat']));
+
+            // Buat ID grup berdasarkan tanggal keberangkatan dan ID paket
+            $idGrup = 'GRP-' . date('Ymd', strtotime($paket['waktuberangkat'])) . '-' . $paket['idpaket'];
+
+            // Tambahkan ke array grup keberangkatan
+            $grupKeberangkatan[] = [
+                'id_grup' => $idGrup,
+                'nama_grup' => 'Grup ' . $paket['namapaket'] . ' - ' . $tanggalKeberangkatan,
+                'jenis_perjalanan' => $jenisPaket,
+                'nama_paket' => $paket['namapaket'],
+                'tanggal_pembuatan' => date('d/m/Y', strtotime($paket['created_at'])),
+                'status' => $paket['status'] ? 'Aktif' : 'Nonaktif'
+            ];
+        }
+
+        $data = [
+            'title' => 'Laporan Keberangkatan Grup',
+            'grup_keberangkatan' => $grupKeberangkatan,
+            'tanggal' => date('d-m-Y'),
+            'logo' => base_url('assets/images/applogo.png'),
+            'print_view' => true // Flag untuk view cetak
+        ];
+
+        return view('admin/laporan/cetak_keberangkatan_grup', $data);
+    }
 }
