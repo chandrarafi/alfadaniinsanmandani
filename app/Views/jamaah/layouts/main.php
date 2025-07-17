@@ -147,7 +147,7 @@
 
         // User dropdown toggle
         document.getElementById('userMenuButton').addEventListener('click', function(e) {
-            e.stopPropagation();
+            e.stopPropagation(); // Mencegah event click menyebar ke document
             document.getElementById('userDropdown').classList.toggle('hidden');
         });
 
@@ -156,7 +156,8 @@
             const dropdown = document.getElementById('userDropdown');
             const button = document.getElementById('userMenuButton');
 
-            if (!button.contains(event.target) && !dropdown.contains(event.target)) {
+            // Jika klik di luar button dan dropdown, sembunyikan dropdown
+            if (dropdown && button && !button.contains(event.target) && !dropdown.contains(event.target)) {
                 dropdown.classList.add('hidden');
             }
         });

@@ -234,6 +234,9 @@
             // Send AJAX request
             fetch('<?= base_url('jamaah/update-profile') ?>', {
                     method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
                     body: formData
                 })
                 .then(response => response.json())
@@ -327,6 +330,9 @@
             // Send AJAX request
             fetch('<?= base_url('jamaah/change-password') ?>', {
                     method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
                     body: formData
                 })
                 .then(response => response.json())

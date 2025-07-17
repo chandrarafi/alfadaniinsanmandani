@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,51 +8,77 @@
     <style>
         body {
             font-family: sans-serif;
+            padding: 20px;
         }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .logo {
+            width: 100px;
+            height: auto;
+            margin-right: 20px;
+        }
+
+        .company-name {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .report-title {
+            font-size: 16px;
+            margin-top: 5px;
+        }
+
         .content-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
         }
-        .content-table th, .content-table td {
-            border: 1px solid #dddddd;
-            text-align: left;
+
+        .content-table th,
+        .content-table td {
+            border: 1px solid #000;
             padding: 8px;
             font-size: 12px;
+            text-align: center;
         }
-        .content-table tr:nth-child(even) {
+
+        .content-table th {
             background-color: #f2f2f2;
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: right;
+        }
+
+        .signature {
+            margin-top: 50px;
+            font-weight: bold;
         }
     </style>
 </head>
+
 <body>
-
-    <!-- 
-      Struktur header untuk memusatkan teks dengan logo di sebelah kiri.
-      Menggunakan layout tabel tiga kolom:
-      - Sel kiri untuk logo (lebar tetap).
-      - Sel tengah untuk judul (mengisi sisa ruang).
-      - Sel kanan kosong sebagai penyeimbang (lebar sama dengan sel logo).
-      Ini memastikan sel tengah benar-benar terpusat.
-    -->
-    <table style="width: 100%;">
-        <tr>
-            <td style="width: 120px; vertical-align: middle;">
-                <img src="<?= $logo; ?>" alt="Logo" style="width: 100px; height: auto;" />
-            </td>
-            <td style="text-align: center; vertical-align: middle;">
-                <h1 style="margin: 0; font-size: 22px;">PT ALFADANI</h1>
-                <p style="margin: 3px 0; font-size: 14px;">Jl. Raya Timur No. 23, Kendal, Jawa Tengah</p>
-                <p style="margin: 3px 0; font-size: 14px;">Email: info@alfadani.com | Telp: (0294) 123456</p>
-            </td>
-            <td style="width: 120px;">
-                <!-- Sel kosong untuk menyeimbangkan logo -->
-            </td>
-        </tr>
-    </table>
-
-    <div style="border-bottom: 2px solid #000; margin-top: 10px; margin-bottom: 20px;"></div>
-
-    <h2 style="text-align: center; margin-bottom: 20px;">Laporan Data Jamaah</h2>
+    <div class="header">
+        <div class="logo-container">
+            <img src="<?= $logo; ?>" alt="Logo" class="logo">
+            <div>
+                <div class="company-name">Haji Umroh PT.Alfadani Insan Madani</div>
+                <div class="report-title">Laporan Data Jamaah</div>
+            </div>
+        </div>
+    </div>
 
     <table class="content-table">
         <thead>
@@ -67,21 +94,32 @@
             </tr>
         </thead>
         <tbody>
-            <?php $no = 1; ?>
-            <?php foreach ($jamaah as $item) : ?>
+            <?php if (empty($jamaah)): ?>
                 <tr>
-                    <td><?= $no++; ?></td>
-                    <td><?= $item['nik']; ?></td>
-                    <td><?= $item['namajamaah']; ?></td>
-                    <td><?= $item['jenkel'] == 'L' ? 'Laki-laki' : 'Perempuan'; ?></td>
-                    <td><?= $item['alamat']; ?></td>
-                    <td><?= $item['emailjamaah']; ?></td>
-                    <td><?= $item['nohpjamaah']; ?></td>
-                    <td><?= $item['status'] ? 'Aktif' : 'Nonaktif'; ?></td>
+                    <td colspan="8">Tidak ada data jamaah</td>
                 </tr>
-            <?php endforeach; ?>
+            <?php else: ?>
+                <?php $no = 1; ?>
+                <?php foreach ($jamaah as $item) : ?>
+                    <tr>
+                        <td><?= $no++; ?></td>
+                        <td><?= $item['nik']; ?></td>
+                        <td><?= $item['namajamaah']; ?></td>
+                        <td><?= $item['jenkel'] == 'L' ? 'Laki-laki' : 'Perempuan'; ?></td>
+                        <td><?= $item['alamat']; ?></td>
+                        <td><?= $item['emailjamaah']; ?></td>
+                        <td><?= $item['nohpjamaah']; ?></td>
+                        <td><?= $item['status'] ? 'Aktif' : 'Nonaktif'; ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </tbody>
     </table>
 
+    <div class="footer">
+        <div>Kendal, <?= date('d-m-Y'); ?></div>
+        <div class="signature">Pimpinan</div>
+    </div>
 </body>
+
 </html>

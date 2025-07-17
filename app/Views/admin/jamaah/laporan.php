@@ -9,7 +9,7 @@
                     <h3 class="card-title">Laporan Jamaah</h3>
                     <div class="card-tools">
                         <a href="<?= base_url('admin/laporan/jamaah/cetak'); ?>" class="btn btn-primary btn-sm" target="_blank">
-                            <i class="fas fa-print"></i> Cetak PDF
+                            <i class="fas fa-print"></i> Cetak Laporan
                         </a>
                     </div>
                 </div>

@@ -4,18 +4,20 @@ namespace App\Controllers;
 
 use CodeIgniter\Controller;
 use App\Models\UserModel;
+use App\Models\JamaahModel;
 
 class Auth extends BaseController
 {
     protected $session;
     protected $userModel;
     protected $email;
-
+    protected $jamaahModel;
     public function __construct()
     {
         $this->session = \Config\Services::session();
         $this->userModel = new UserModel();
         $this->email = \Config\Services::email();
+        $this->jamaahModel = new JamaahModel();
     }
 
     public function index()
@@ -186,6 +188,18 @@ class Auth extends BaseController
 
         $this->userModel->insert($data);
         $userId = $this->userModel->getInsertID();
+
+        // Simpan data user ke database
+        $this->jamaahModel->insert([
+            'idjamaah' => $this->jamaahModel->getNewId(),
+            'userid' => $userId,
+            'namajamaah' => $this->request->getPost('nama'),
+            // 'jenkel' => $this->request->getPost('jenkel'),
+            // 'alamat' => $this->request->getPost('alamat'),
+            'emailjamaah' => $this->request->getPost('email'),
+            // 'nohpjamaah' => $this->request->getPost('nohpjamaah'),
+            'status' => 1
+        ]);
 
         // Simpan token verifikasi
         $this->userModel->saveVerificationToken($userId, $token);

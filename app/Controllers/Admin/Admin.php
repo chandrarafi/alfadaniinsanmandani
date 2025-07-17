@@ -358,4 +358,391 @@ class Admin extends BaseController
 
         return view('admin/pendaftaran/detail', $data);
     }
+
+    /**
+     * Menampilkan halaman pendaftaran langsung oleh admin
+     */
+    public function pendaftaranLangsung()
+    {
+        // Cek apakah user adalah admin
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'admin') {
+            return redirect()->to('auth');
+        }
+
+        // Ambil data paket aktif
+        $paketModel = new \App\Models\PaketModel();
+        $paket = $paketModel->getActivePaket();
+
+        // Ambil data kategori
+        $kategoriModel = new \App\Models\KategoriModel();
+        $kategori = $kategoriModel->findAll();
+
+        return view('admin/pendaftaran/langsung', [
+            'title' => 'Pendaftaran Langsung',
+            'paket' => $paket,
+            'kategori' => $kategori
+        ]);
+    }
+
+    /**
+     * Mencari jamaah berdasarkan NIK atau nama
+     */
+    public function cariJamaah()
+    {
+        // Cek apakah user adalah admin
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'admin') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $keyword = $this->request->getGet('keyword');
+
+        if (empty($keyword) || strlen($keyword) < 3) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Kata kunci pencarian minimal 3 karakter'
+            ]);
+        }
+
+        // Cari jamaah berdasarkan NIK atau nama
+        $jamaahModel = new \App\Models\JamaahModel();
+        $jamaah = $jamaahModel->cariJamaah($keyword);
+
+        return $this->response->setJSON([
+            'status' => true,
+            'data' => $jamaah
+        ]);
+    }
+
+    /**
+     * Menambahkan jamaah baru oleh admin
+     */
+    public function tambahJamaah()
+    {
+        // Cek apakah user adalah admin
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'admin') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $rules = [
+            'nik' => 'required|numeric|min_length[16]|max_length[16]',
+            'nama' => 'required',
+            'jenkel' => 'required|in_list[L,P]',
+            'alamat' => 'required',
+            'nohp' => 'required|numeric'
+        ];
+
+        $messages = [
+            'nik' => [
+                'required' => 'NIK harus diisi',
+                'numeric' => 'NIK harus berupa angka',
+                'min_length' => 'NIK harus 16 digit',
+                'max_length' => 'NIK harus 16 digit'
+            ],
+            'nama' => [
+                'required' => 'Nama lengkap harus diisi'
+            ],
+            'jenkel' => [
+                'required' => 'Jenis kelamin harus dipilih',
+                'in_list' => 'Jenis kelamin tidak valid'
+            ],
+            'alamat' => [
+                'required' => 'Alamat harus diisi'
+            ],
+            'nohp' => [
+                'required' => 'Nomor HP harus diisi',
+                'numeric' => 'Nomor HP harus berupa angka'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => $this->validator->getErrors()
+            ]);
+        }
+
+        // Generate ID jamaah baru
+        $jamaahModel = new \App\Models\JamaahModel();
+        $idJamaah = $jamaahModel->getNewId();
+
+        // Simpan data jamaah baru
+        $dataJamaah = [
+            'idjamaah' => $idJamaah,
+            'userid' => null, // Jamaah langsung tidak memiliki akun
+            'ref' => null,
+            'nik' => $this->request->getPost('nik'),
+            'namajamaah' => $this->request->getPost('nama'),
+            'jenkel' => $this->request->getPost('jenkel'),
+            'alamat' => $this->request->getPost('alamat'),
+            'nohpjamaah' => $this->request->getPost('nohp'),
+            'emailjamaah' => $this->request->getPost('email') ?? null,
+            'status' => true
+        ];
+
+        $jamaahModel->insert($dataJamaah);
+
+        // Upload dokumen jamaah jika ada
+        $dokumenFiles = $this->request->getFiles();
+        $dokumenModel = new \App\Models\DokumenModel();
+
+        if (!empty($dokumenFiles) && isset($dokumenFiles['dokumen'])) {
+            foreach ($dokumenFiles['dokumen'] as $namaDokumen => $file) {
+                if ($file->isValid() && !$file->hasMoved()) {
+                    $newName = $file->getRandomName();
+                    $file->move(ROOTPATH . 'public/uploads/dokumen', $newName);
+
+                    $dataDokumen = [
+                        'idjamaah' => $idJamaah,
+                        'namadokumen' => $namaDokumen,
+                        'file' => $newName
+                    ];
+
+                    $dokumenModel->simpan($dataDokumen);
+                }
+            }
+        }
+
+        $jamaah = $jamaahModel->find($idJamaah);
+
+        return $this->response->setJSON([
+            'status' => true,
+            'message' => 'Data jamaah berhasil ditambahkan',
+            'jamaah' => $jamaah
+        ]);
+    }
+
+    /**
+     * Proses pendaftaran langsung oleh admin
+     */
+    public function prosesPendaftaranLangsung()
+    {
+        // Cek apakah user adalah admin
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'admin') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $rules = [
+            'paket_id' => 'required',
+            'total_bayar' => 'required|numeric',
+            'jamaah_count' => 'required|numeric|greater_than[0]',
+            'jamaah_ids.*' => 'required'
+        ];
+
+        $messages = [
+            'paket_id' => [
+                'required' => 'Paket harus dipilih'
+            ],
+            'total_bayar' => [
+                'required' => 'Total bayar harus diisi',
+                'numeric' => 'Total bayar harus berupa angka'
+            ],
+            'jamaah_count' => [
+                'required' => 'Jumlah jamaah harus diisi',
+                'numeric' => 'Jumlah jamaah harus berupa angka',
+                'greater_than' => 'Jumlah jamaah minimal 1 orang'
+            ],
+            'jamaah_ids.*' => [
+                'required' => 'ID jamaah harus diisi'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => $this->validator->getErrors()
+            ]);
+        }
+
+        $paketId = $this->request->getPost('paket_id');
+        $totalBayar = $this->request->getPost('total_bayar');
+        $jamaahIds = $this->request->getPost('jamaah_ids');
+        $jamaahCount = count($jamaahIds);
+        $pembayaranAwal = $this->request->getPost('pembayaran_awal') ?? 0;
+        $metodePembayaran = $this->request->getPost('metode_pembayaran') ?? 'Tunai';
+        $keterangan = $this->request->getPost('keterangan') ?? '';
+
+        // Cek kuota paket
+        $paketModel = new \App\Models\PaketModel();
+        $paket = $paketModel->find($paketId);
+        if (!$paket || $paket['kuota'] < $jamaahCount) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Kuota paket tidak mencukupi'
+            ]);
+        }
+
+        // Kurangi kuota paket
+        $paketModel->reduceQuota($paketId, $jamaahCount);
+
+        // Buat ID pendaftaran baru
+        $idPendaftaran = $this->pendaftaranModel->getNewId();
+
+        // Simpan data pendaftaran
+        $dataPendaftaran = [
+            'idpendaftaran' => $idPendaftaran,
+            'iduser' => null, // Pendaftaran langsung tidak terkait dengan user
+            'paketid' => $paketId,
+            'tanggaldaftar' => date('Y-m-d'),
+            'totalbayar' => $totalBayar,
+            'sisabayar' => $totalBayar - $pembayaranAwal,
+            'status' => 'confirmed', // Langsung dikonfirmasi
+            'keterangan' => $keterangan,
+            'admin_id' => $this->session->get('id') // ID admin yang melakukan pendaftaran
+        ];
+
+        $this->pendaftaranModel->insert($dataPendaftaran);
+
+        // Simpan detail pendaftaran untuk setiap jamaah
+        foreach ($jamaahIds as $jamaahId) {
+            $dataDetail = [
+                'idpendaftaran' => $idPendaftaran,
+                'jamaahid' => $jamaahId
+            ];
+            $this->detailPendaftaranModel->simpan($dataDetail);
+        }
+
+        // Jika ada pembayaran awal, simpan data pembayaran
+        if ($pembayaranAwal > 0) {
+            $pembayaranModel = new \App\Models\PembayaranModel();
+            $idPembayaran = $pembayaranModel->getNewId();
+
+            $dataPembayaran = [
+                'idpembayaran' => $idPembayaran,
+                'pendaftaranid' => $idPendaftaran,
+                'tanggalbayar' => date('Y-m-d'),
+                'metodepembayaran' => $metodePembayaran,
+                'tipepembayaran' => 'DP',
+                'jumlahbayar' => $pembayaranAwal,
+                'buktibayar' => 'admin_input.jpg', // Placeholder untuk pembayaran langsung
+                'statuspembayaran' => true, // Langsung dikonfirmasi
+                'admin_id' => $this->session->get('id') // ID admin yang melakukan konfirmasi
+            ];
+
+            $pembayaranModel->simpan($dataPembayaran);
+        }
+
+        return $this->response->setJSON([
+            'status' => true,
+            'message' => 'Pendaftaran berhasil disimpan',
+            'redirect' => base_url('admin/pendaftaran/detail/' . $idPendaftaran)
+        ]);
+    }
+
+    /**
+     * Proses pembayaran langsung oleh admin
+     */
+    public function prosesPembayaranLangsung()
+    {
+        // Cek apakah user adalah admin
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'admin') {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
+        }
+
+        $rules = [
+            'pendaftaran_id' => 'required',
+            'metode_pembayaran' => 'required',
+            'jumlah_bayar' => 'required|numeric'
+        ];
+
+        $messages = [
+            'pendaftaran_id' => [
+                'required' => 'ID Pendaftaran harus diisi'
+            ],
+            'metode_pembayaran' => [
+                'required' => 'Metode pembayaran harus dipilih'
+            ],
+            'jumlah_bayar' => [
+                'required' => 'Jumlah bayar harus diisi',
+                'numeric' => 'Jumlah bayar harus berupa angka'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => $this->validator->getErrors()
+            ]);
+        }
+
+        $pendaftaranId = $this->request->getPost('pendaftaran_id');
+        $metodePembayaran = $this->request->getPost('metode_pembayaran');
+        $jumlahBayar = $this->request->getPost('jumlah_bayar');
+        $keterangan = $this->request->getPost('keterangan') ?? '';
+
+        // Cek pendaftaran
+        $pendaftaran = $this->pendaftaranModel->find($pendaftaranId);
+        if (!$pendaftaran) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Data pendaftaran tidak ditemukan'
+            ]);
+        }
+
+        // Cek apakah jumlah bayar melebihi sisa bayar
+        if ($jumlahBayar > $pendaftaran['sisabayar']) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Jumlah bayar melebihi sisa pembayaran'
+            ]);
+        }
+
+        // Buat ID pembayaran baru
+        $pembayaranModel = new \App\Models\PembayaranModel();
+        $idPembayaran = $pembayaranModel->getNewId();
+
+        // Cek apakah ini pembayaran pertama untuk pendaftaran ini
+        $pembayaranSebelumnya = $pembayaranModel->where('pendaftaranid', $pendaftaranId)->findAll();
+        $tipePembayaran = empty($pembayaranSebelumnya) ? 'DP' : 'Cicilan';
+
+        // Simpan data pembayaran
+        $dataPembayaran = [
+            'idpembayaran' => $idPembayaran,
+            'pendaftaranid' => $pendaftaranId,
+            'tanggalbayar' => date('Y-m-d'),
+            'metodepembayaran' => $metodePembayaran,
+            'tipepembayaran' => $tipePembayaran,
+            'jumlahbayar' => $jumlahBayar,
+            'buktibayar' => 'admin_input.jpg', // Placeholder untuk pembayaran langsung
+            'statuspembayaran' => true, // Langsung dikonfirmasi
+            'keterangan' => $keterangan,
+            'admin_id' => $this->session->get('id') // ID admin yang melakukan konfirmasi
+        ];
+
+        $pembayaranModel->simpan($dataPembayaran);
+
+        // Update sisa bayar di pendaftaran
+        $sisaBayarBaru = $pendaftaran['sisabayar'] - $jumlahBayar;
+        $this->pendaftaranModel->update($pendaftaranId, [
+            'sisabayar' => $sisaBayarBaru
+        ]);
+
+        // Jika sisa bayar 0, update status pendaftaran menjadi completed
+        if ($sisaBayarBaru <= 0) {
+            $this->pendaftaranModel->update($pendaftaranId, [
+                'status' => 'completed'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status' => true,
+            'message' => 'Pembayaran berhasil disimpan',
+            'redirect' => base_url('admin/pendaftaran/detail/' . $pendaftaranId)
+        ]);
+    }
 }

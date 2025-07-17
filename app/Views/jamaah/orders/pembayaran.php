@@ -129,7 +129,7 @@
                                 <select id="metode_pembayaran" name="metode_pembayaran" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
                                     <option value="">Pilih Metode Pembayaran</option>
                                     <option value="Transfer Bank">Transfer Bank</option>
-                                    <option value="QRIS">QRIS</option>
+                                    <!-- <option value="QRIS">QRIS</option> -->
                                 </select>
                             </div>
 

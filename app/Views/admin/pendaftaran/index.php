@@ -1,154 +1,161 @@
 <?= $this->extend('admin/layouts/main') ?>
 
+<?= $this->section('styles') ?>
+<!-- DataTable CSS -->
+<link href="<?= base_url('assets') ?>/plugins/datatable/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
-<div class="page-breadcrumb d-flex align-items-center mb-3">
-    <div class="breadcrumb-title pe-3">Pendaftaran & Pembayaran</div>
-    <div class="ps-3 ms-auto">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0 p-0">
-                <li class="breadcrumb-item"><a href="<?= base_url('admin') ?>"><i class="bx bx-home-alt"></i> Dashboard</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Pendaftaran & Pembayaran Jamaah</li>
-            </ol>
-        </nav>
-    </div>
-</div>
-
-<!-- Daftar Pendaftaran -->
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="d-flex align-items-center mb-4">
-            <h5 class="card-title mb-0">Daftar Pendaftaran Jamaah</h5>
+<div class="page-content">
+    <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+        <div class="breadcrumb-title pe-3">Pendaftaran & Pembayaran</div>
+        <div class="ps-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 p-0">
+                    <li class="breadcrumb-item"><a href="<?= base_url('admin') ?>"><i class="bx bx-home-alt"></i></a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Pendaftaran & Pembayaran Jamaah</li>
+                </ol>
+            </nav>
         </div>
-        <div class="table-responsive">
-            <table id="tablePendaftaran" class="table table-striped table-bordered" style="width:100%">
-                <thead>
-                    <tr>
-                        <th width="5%">No</th>
-                        <th>ID Pendaftaran</th>
-                        <th>Nama Jamaah</th>
-                        <th>Paket</th>
-                        <th>Tanggal Daftar</th>
-                        <th>Total Bayar</th>
-                        <th>Sisa Bayar</th>
-                        <th>Status</th>
-                        <th>Pembayaran</th>
-                        <th width="15%">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($pendaftaran)): ?>
-                        <tr>
-                            <td colspan="10" class="text-center">Tidak ada data pendaftaran</td>
-                        </tr>
-                    <?php else: ?>
-                        <?php $no = 1;
-                        foreach ($pendaftaran as $item): ?>
-                            <tr>
-                                <td><?= $no++ ?></td>
-                                <td><?= $item['idpendaftaran'] ?></td>
-                                <td><?= $item['nama'] ?? 'Tidak ada nama' ?></td>
-                                <td><?= $item['namapaket'] ?? 'Tidak ada paket' ?></td>
-                                <td><?= date('d M Y', strtotime($item['tanggaldaftar'])) ?></td>
-                                <td>Rp <?= number_format($item['totalbayar'], 0, ',', '.') ?></td>
-                                <td>Rp <?= number_format($item['sisabayar'], 0, ',', '.') ?></td>
-                                <td>
-                                    <?php
-                                    $badgeClass = 'bg-warning';
-                                    $statusLabel = 'Menunggu';
+    </div>
 
-                                    if ($item['status'] === 'confirmed') {
+    <!-- Alert Messages -->
+    <?php if (session()->getFlashdata('success')) : ?>
+        <div class="alert alert-success border-0 bg-success alert-dismissible fade show py-2">
+            <div class="d-flex align-items-center">
+                <div class="font-35 text-white"><i class='bx bxs-check-circle'></i></div>
+                <div class="ms-3">
+                    <h6 class="mb-0 text-white">Berhasil!</h6>
+                    <div class="text-white"><?= session()->getFlashdata('success') ?></div>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
+    <?php if (session()->getFlashdata('error')) : ?>
+        <div class="alert alert-danger border-0 bg-danger alert-dismissible fade show py-2">
+            <div class="d-flex align-items-center">
+                <div class="font-35 text-white"><i class='bx bxs-message-square-x'></i></div>
+                <div class="ms-3">
+                    <h6 class="mb-0 text-white">Error!</h6>
+                    <div class="text-white"><?= session()->getFlashdata('error') ?></div>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
+    <!-- Daftar Pendaftaran -->
+    <div class="card radius-10">
+        <div class="card-body">
+            <div class="d-flex align-items-center">
+                <h5 class="mb-0">Daftar Pendaftaran Jamaah</h5>
+                <div class="ms-auto">
+                    <div class="d-flex gap-2">
+                        <!-- <a href="<?= base_url('admin/pendaftaran/langsung') ?>" class="btn btn-sm btn-primary">
+                            <i class="bx bx-plus"></i> Pendaftaran Langsung
+                        </a> -->
+                        <select id="filterStatus" class="form-select form-select-sm">
+                            <option value="">Semua Status</option>
+                            <option value="pending">Menunggu</option>
+                            <option value="confirmed">Dikonfirmasi</option>
+                            <option value="cancelled">Dibatalkan</option>
+                            <option value="completed">Selesai</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnRefresh">
+                            <i class="bx bx-refresh"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div class="table-responsive mt-3">
+                <table id="tablePendaftaran" class="table table-striped table-bordered align-middle" style="width:100%">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="5%" class="text-center">No</th>
+                            <th>ID Pendaftaran</th>
+                            <th>Nama Jamaah</th>
+                            <th>Paket</th>
+                            <th>Tanggal Daftar</th>
+                            <th>Total Bayar</th>
+                            <th>Sisa Bayar</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Pembayaran</th>
+                            <th width="10%" class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($pendaftaran)): ?>
+                            <tr>
+                                <td colspan="10" class="text-center">Tidak ada data pendaftaran</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php $no = 1;
+                            foreach ($pendaftaran as $item): ?>
+                                <tr>
+                                    <td class="text-center"><?= $no++ ?></td>
+                                    <td><?= $item['idpendaftaran'] ?></td>
+                                    <td><?= $item['nama'] ?? 'Tidak ada nama' ?></td>
+                                    <td><?= $item['namapaket'] ?? 'Tidak ada paket' ?></td>
+                                    <td><?= date('d M Y', strtotime($item['tanggaldaftar'])) ?></td>
+                                    <td>Rp <?= number_format($item['totalbayar'], 0, ',', '.') ?></td>
+                                    <td>Rp <?= number_format($item['sisabayar'], 0, ',', '.') ?></td>
+                                    <td class="text-center">
+                                        <?php
                                         $badgeClass = 'bg-success';
-                                        $statusLabel = 'Dikonfirmasi';
-                                    } else if ($item['status'] === 'cancelled') {
-                                        $badgeClass = 'bg-danger';
-                                        $statusLabel = 'Dibatalkan';
-                                    } else if ($item['status'] === 'completed') {
-                                        $badgeClass = 'bg-info';
-                                        $statusLabel = 'Selesai';
-                                    }
-                                    ?>
-                                    <span class="badge <?= $badgeClass ?>"><?= $statusLabel ?></span>
-                                </td>
-                                <td>
-                                    <?php
-                                    $badgeClass = 'bg-success';
-                                    $label = 'Tidak ada';
+                                        $statusLabel = 'Terkonfimasi';
+                                        $statusValue = 'pending';
 
-                                    if (isset($item['pembayaran_pending']) && $item['pembayaran_pending'] > 0) {
-                                        $badgeClass = 'bg-warning';
-                                        $label = $item['pembayaran_pending'] . ' menunggu konfirmasi';
-                                    }
-                                    ?>
-                                    <span class="badge <?= $badgeClass ?>"><?= $label ?></span>
-                                </td>
-                                <td>
-                                    <a href="<?= base_url('admin/pendaftaran/detail/' . $item['idpendaftaran']) ?>" class="btn btn-sm btn-primary">
-                                        <i class="bx bx-detail"></i> Detail
-                                    </a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                                        if ($item['status'] === 'confirmed') {
+                                            $badgeClass = 'bg-success';
+                                            $statusLabel = 'Dikonfirmasi';
+                                            $statusValue = 'confirmed';
+                                        } else if ($item['status'] === 'cancelled') {
+                                            $badgeClass = 'bg-danger';
+                                            $statusLabel = 'Dibatalkan';
+                                            $statusValue = 'cancelled';
+                                        } else if ($item['status'] === 'completed') {
+                                            $badgeClass = 'bg-info';
+                                            $statusLabel = 'Selesai';
+                                            $statusValue = 'completed';
+                                        }
+                                        ?>
+                                        <span class="badge rounded-pill <?= $badgeClass ?>" data-status="<?= $statusValue ?>"><?= $statusLabel ?></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <?php
+                                        $badgeClass = 'bg-success';
+                                        $label = 'Tidak ada';
+
+                                        if (isset($item['pembayaran_pending']) && $item['pembayaran_pending'] > 0) {
+                                            $badgeClass = 'bg-warning';
+                                            $label = $item['pembayaran_pending'] . ' menunggu konfirmasi';
+                                        }
+                                        ?>
+                                        <span class="badge rounded-pill <?= $badgeClass ?>"><?= $label ?></span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <a href="<?= base_url('admin/pendaftaran/detail/' . $item['idpendaftaran']) ?>" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Detail Pendaftaran">
+                                                <i class="bx bx-detail"></i>
+                                            </a>
+                                            <!-- <button class="btn btn-sm btn-outline-info btn-cetak" data-id="<?= $item['idpendaftaran'] ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="Cetak Faktur">
+                                                <i class="bx bx-printer"></i>
+                                            </button> -->
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
-
-<!-- Daftar Pembayaran yang Perlu Dikonfirmasi -->
-<!-- <div class="card">
-    <div class="card-body">
-        <div class="d-flex align-items-center mb-4">
-            <h5 class="card-title mb-0">Pembayaran yang Perlu Dikonfirmasi</h5>
-        </div>
-        <div class="table-responsive">
-            <table id="tablePembayaran" class="table table-striped table-bordered" style="width:100%">
-                <thead>
-                    <tr>
-                        <th width="5%">No</th>
-                        <th>ID Pembayaran</th>
-                        <th>ID Pendaftaran</th>
-                        <th>Nama Jamaah</th>
-                        <th>Paket</th>
-                        <th>Tanggal Bayar</th>
-                        <th>Metode</th>
-                        <th>Jumlah</th>
-                        <th>Bukti</th>
-                        <th width="15%">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($pembayaran)): ?>
-                        <tr>
-                            <td colspan="10" class="text-center">Tidak ada pembayaran yang perlu dikonfirmasi</td>
-                        </tr>
-                    <?php else: ?>
-                        <?php $no = 1;
-                        foreach ($pembayaran as $bayar): ?>
-                            <tr>
-                                <td><?= $no++ ?></td>
-                                <td><?= $bayar['idpembayaran'] ?></td>
-                                <td><?= $bayar['pendaftaranid'] ?></td>
-                                <td><?= $bayar['nama_jamaah'] ?></td>
-                                <td><?= $bayar['namapaket'] ?></td>
-                                <td><?= date('d M Y', strtotime($bayar['tanggalbayar'])) ?></td>
-                                <td><?= $bayar['metodepembayaran'] ?></td>
-                                <td>Rp <?= number_format($bayar['jumlahbayar'], 0, ',', '.') ?></td>
-                                <td>
-                                    <button class="btn btn-sm btn-info btn-lihat-bukti" data-bukti="<?= $bayar['buktibayar'] ?>">Lihat Bukti</button>
-                                </td>
-                                <td>
-                                    <button class="btn btn-sm btn-success btn-konfirmasi" data-id="<?= $bayar['idpembayaran'] ?>">Konfirmasi</button>
-                                    <button class="btn btn-sm btn-danger btn-tolak" data-id="<?= $bayar['idpembayaran'] ?>">Tolak</button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div> -->
 
 <!-- Modal Bukti Pembayaran -->
 <div class="modal fade" id="modalBukti" tabindex="-1" aria-hidden="true">
@@ -164,24 +171,79 @@
         </div>
     </div>
 </div>
+<?= $this->endSection() ?>
+
+<?= $this->section('js') ?>
+<!-- DataTable JS -->
+<script src="<?= base_url('assets') ?>/plugins/datatable/js/jquery.dataTables.min.js"></script>
+<script src="<?= base_url('assets') ?>/plugins/datatable/js/dataTables.bootstrap5.min.js"></script>
+<!-- Export Plugins -->
+<script src="<?= base_url('assets') ?>/js/dataTables.buttons.min.js"></script>
+<script src="<?= base_url('assets') ?>/js/jszip.min.js"></script>
+<script src="<?= base_url('assets') ?>/js/buttons.html5.min.js"></script>
+<script src="<?= base_url('assets') ?>/js/buttons.print.min.js"></script>
 
 <script>
     $(document).ready(function() {
-        // DataTable untuk pendaftaran (tabel statis)
+        // Inisialisasi tooltip
+        $('[data-bs-toggle="tooltip"]').tooltip();
+
+        // DataTable untuk pendaftaran
         const tablePendaftaran = $('#tablePendaftaran').DataTable({
+
+            language: {
+                search: "Cari:",
+                lengthMenu: "Tampilkan _MENU_ data",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+                infoFiltered: "(disaring dari _MAX_ total data)",
+                zeroRecords: "Tidak ada data yang cocok",
+                paginate: {
+                    first: "Pertama",
+                    last: "Terakhir",
+                    next: "Selanjutnya",
+                    previous: "Sebelumnya"
+                }
+            },
             order: [
                 [4, 'desc']
-            ] // Sort by tanggal daftar
+            ], // Sort by tanggal daftar
+            responsive: true,
+            columnDefs: [{
+                className: "align-middle",
+                targets: "_all"
+            }]
         });
 
-        // DataTable untuk pembayaran yang perlu dikonfirmasi
-        $('#tablePembayaran').DataTable();
+        // Filter berdasarkan status
+        $('#filterStatus').on('change', function() {
+            const status = $(this).val();
+
+            if (status === '') {
+                tablePendaftaran.column(7).search('').draw();
+            } else {
+                tablePendaftaran.column(7).search(status).draw();
+            }
+        });
+
+        // Tombol refresh
+        $('#btnRefresh').on('click', function() {
+            $('#filterStatus').val('');
+            tablePendaftaran.search('').columns().search('').draw();
+        });
 
         // Lihat bukti pembayaran
         $('.btn-lihat-bukti').on('click', function() {
             const bukti = $(this).data('bukti');
             $('#imgBukti').attr('src', '<?= base_url('uploads/pembayaran/') ?>' + bukti);
             $('#modalBukti').modal('show');
+        });
+
+        // Tombol cetak faktur
+        $('.btn-cetak').on('click', function() {
+            const id = $(this).data('id');
+            const url = '<?= base_url('admin/pendaftaran/cetak-faktur/') ?>' + id;
+            window.open(url, '_blank');
         });
 
         // Konfirmasi pembayaran

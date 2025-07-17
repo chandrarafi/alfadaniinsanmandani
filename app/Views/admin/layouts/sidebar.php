@@ -75,11 +75,9 @@
                     </li>
                     <li> <a href="<?= base_url('admin/laporan/paket') ?>"><i class="bx bx-right-arrow-alt"></i>Laporan Paket</a>
                     </li>
-                    <li> <a href="<?= base_url($role . '/reports/daily') ?>"><i class="bx bx-right-arrow-alt"></i>Laporan Harian</a>
+                    <li> <a href="<?= base_url('admin/laporan/pendaftaran') ?>"><i class="bx bx-right-arrow-alt"></i>Laporan Pendaftaran</a>
                     </li>
-                    <li> <a href="<?= base_url($role . '/reports/monthly') ?>"><i class="bx bx-right-arrow-alt"></i>Laporan Bulanan</a>
-                    </li>
-                    <li> <a href="<?= base_url($role . '/reports/yearly') ?>"><i class="bx bx-right-arrow-alt"></i>Laporan Tahunan</a>
+                    <li> <a href="<?= base_url('admin/laporan/pembayaran') ?>"><i class="bx bx-right-arrow-alt"></i>Laporan Pembayaran</a>
                     </li>
                 </ul>
             </li>

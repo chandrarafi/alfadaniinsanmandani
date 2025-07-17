@@ -71,15 +71,15 @@
                     <a href="#kontak" class="px-3 py-2 text-gray-700 font-medium hover:text-primary-600">Kontak</a>
 
                     <?php if (session()->get('logged_in')): ?>
-                        <div class="relative group ml-2">
-                            <button class="flex items-center px-3 py-2 text-gray-700 hover:text-primary-600 font-medium">
+                        <div class="relative">
+                            <button id="userMenuButton" class="flex items-center px-3 py-2 text-gray-700 hover:text-primary-600 font-medium">
                                 <i class="fas fa-user-circle mr-2 text-lg"></i>
                                 <span class="mr-1"><?= session()->get('nama') ?></span>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
-                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden group-hover:block">
+                            <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden">
                                 <a href="<?= base_url(session()->get('role')) ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
                                 </a>
@@ -528,6 +528,26 @@
             if (mobileMenuButton && mobileMenu) {
                 mobileMenuButton.addEventListener('click', function() {
                     mobileMenu.classList.toggle('hidden');
+                });
+            }
+
+            // User dropdown toggle - Menangani klik pada tombol user menu
+            const userMenuButton = document.getElementById('userMenuButton');
+            const userDropdown = document.getElementById('userDropdown');
+
+            if (userMenuButton && userDropdown) {
+                // Menampilkan atau menyembunyikan dropdown saat tombol diklik
+                userMenuButton.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Mencegah event click menyebar ke document
+                    userDropdown.classList.toggle('hidden'); // Toggle class hidden untuk menampilkan/menyembunyikan dropdown
+                });
+
+                // Close dropdown when clicking outside - Menutup dropdown saat mengklik di luar dropdown
+                document.addEventListener('click', function(event) {
+                    // Periksa apakah klik terjadi di luar tombol dan dropdown
+                    if (!userMenuButton.contains(event.target) && !userDropdown.contains(event.target)) {
+                        userDropdown.classList.add('hidden'); // Sembunyikan dropdown
+                    }
                 });
             }
 

@@ -85,12 +85,23 @@ $routes->group('admin/jamaah', ['filter' => 'auth:admin'], function ($routes) {
 
 // Laporan routes
 $routes->group('admin/laporan', ['filter' => 'auth:admin'], function ($routes) {
-    $routes->get('jamaah', 'Admin\Jamaah::laporan');
-    $routes->get('jamaah/cetak', 'Admin\Jamaah::cetakLaporan');
+    $routes->get('jamaah', 'Admin\Laporan::jamaah');
+    $routes->get('jamaah/cetak', 'Admin\Laporan::cetakJamaahPDF');
     $routes->get('paket', 'Admin\Laporan::paket');
-    $routes->get('get-paket', 'Admin\Laporan::getPaket');
-    $routes->get('paket/export-pdf', 'Admin\Laporan::exportPaketPDF');
-    $routes->get('paket/export-excel', 'Admin\Laporan::exportPaketExcel');
+    $routes->get('paket/data', 'Admin\Laporan::getPaketData');
+    $routes->get('paket/pdf', 'Admin\Laporan::exportPaketPDF');
+
+    // Laporan Pendaftaran
+    $routes->get('pendaftaran', 'Admin\Laporan::pendaftaran');
+    $routes->post('pendaftaran/harian', 'Admin\Laporan::pendaftaranHarian');
+    $routes->post('pendaftaran/bulanan', 'Admin\Laporan::pendaftaranBulanan');
+    $routes->post('pendaftaran/tahunan', 'Admin\Laporan::pendaftaranTahunan');
+
+    // Laporan Pembayaran
+    $routes->get('pembayaran', 'Admin\Laporan::pembayaran');
+    $routes->post('pembayaran/harian', 'Admin\Laporan::pembayaranHarian');
+    $routes->post('pembayaran/bulanan', 'Admin\Laporan::pembayaranBulanan');
+    $routes->post('pembayaran/tahunan', 'Admin\Laporan::pembayaranTahunan');
 });
 
 // Admin Routes
@@ -102,6 +113,13 @@ $routes->group('admin', ['filter' => 'auth:admin'], function ($routes) {
     $routes->get('get-pendaftaran', 'Admin\Admin::getPendaftaran');
     $routes->get('pendaftaran/detail/(:segment)', 'Admin\Admin::detailPendaftaran/$1');
     $routes->post('konfirmasi-pembayaran', 'Admin\Admin::konfirmasiPembayaran');
+
+    // Pendaftaran Langsung routes
+    $routes->get('pendaftaran/langsung', 'Admin\Admin::pendaftaranLangsung');
+    $routes->get('cariJamaah', 'Admin\Admin::cariJamaah');
+    $routes->post('tambahJamaah', 'Admin\Admin::tambahJamaah');
+    $routes->post('prosesPendaftaranLangsung', 'Admin\Admin::prosesPendaftaranLangsung');
+    $routes->post('prosesPembayaranLangsung', 'Admin\Admin::prosesPembayaranLangsung');
 
     // Tambahkan rute admin lainnya di sini
     // ...

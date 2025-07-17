@@ -1,488 +1,570 @@
 <?= $this->extend('admin/layouts/main') ?>
 
+<?= $this->section('styles') ?>
+<!-- DataTable CSS -->
+<link href="<?= base_url('assets') ?>/plugins/datatable/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+<!-- Lightbox CSS -->
+<link href="<?= base_url('assets') ?>/css/glightbox.min.css" rel="stylesheet" />
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
-<div class="page-breadcrumb d-flex align-items-center mb-3">
-    <div class="breadcrumb-title pe-3">Pendaftaran</div>
-    <div class="ps-3 ms-auto">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0 p-0">
-                <li class="breadcrumb-item"><a href="<?= base_url('admin') ?>"><i class="bx bx-home-alt"></i> Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="<?= base_url('admin/pendaftaran') ?>">Pendaftaran Jamaah</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Detail Pendaftaran</li>
-            </ol>
-        </nav>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Informasi Pendaftaran -->
-    <div class="col-12 col-lg-6 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-4">
-                    <h5 class="card-title mb-0">Informasi Pendaftaran</h5>
-                    <div class="ms-auto">
-                        <a href="<?= base_url('admin/pendaftaran') ?>" class="btn btn-secondary">
-                            <i class="bx bx-arrow-back"></i> Kembali
-                        </a>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">ID Pendaftaran</div>
-                    <div class="col-md-8"><?= $pendaftaran['idpendaftaran'] ?></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Nama Jamaah</div>
-                    <div class="col-md-8"><?= $pendaftaran['nama'] ?></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Paket</div>
-                    <div class="col-md-8"><?= $pendaftaran['namapaket'] ?></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Kategori</div>
-                    <div class="col-md-8"><?= $pendaftaran['namakategori'] ?? 'Tidak ada kategori' ?></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Tanggal Daftar</div>
-                    <div class="col-md-8"><?= date('d F Y', strtotime($pendaftaran['tanggaldaftar'])) ?></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Waktu Berangkat</div>
-                    <div class="col-md-8"><?= date('d F Y', strtotime($pendaftaran['waktuberangkat'])) ?></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Durasi</div>
-                    <div class="col-md-8"><?= $pendaftaran['durasi'] ?> Hari</div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Total Bayar</div>
-                    <div class="col-md-8">Rp <?= number_format($pendaftaran['totalbayar'], 0, ',', '.') ?></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Sisa Bayar</div>
-                    <div class="col-md-8">Rp <?= number_format($pendaftaran['sisabayar'], 0, ',', '.') ?></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Status</div>
-                    <div class="col-md-8">
-                        <?php
-                        $badgeClass = 'bg-warning';
-                        $statusLabel = 'Menunggu';
-
-                        if ($pendaftaran['status'] === 'confirmed') {
-                            $badgeClass = 'bg-success';
-                            $statusLabel = 'Dikonfirmasi';
-                        } else if ($pendaftaran['status'] === 'cancelled') {
-                            $badgeClass = 'bg-danger';
-                            $statusLabel = 'Dibatalkan';
-                        } else if ($pendaftaran['status'] === 'completed') {
-                            $badgeClass = 'bg-info';
-                            $statusLabel = 'Selesai';
-                        }
-                        ?>
-                        <span class="badge <?= $badgeClass ?>"><?= $statusLabel ?></span>
-                    </div>
-                </div>
+<div class="page-content">
+    <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+        <div class="breadcrumb-title pe-3">Pendaftaran</div>
+        <div class="ps-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 p-0">
+                    <li class="breadcrumb-item"><a href="<?= base_url('admin') ?>"><i class="bx bx-home-alt"></i></a></li>
+                    <li class="breadcrumb-item"><a href="<?= base_url('admin/pendaftaran') ?>">Pendaftaran Jamaah</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Detail Pendaftaran</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="ms-auto">
+            <div class="btn-group">
+                <a href="<?= base_url('admin/pendaftaran') ?>" class="btn btn-outline-primary">
+                    <i class="bx bx-arrow-back me-1"></i> Kembali
+                </a>
+                <button type="button" class="btn btn-primary btn-cetak-faktur" data-id="<?= $pendaftaran['idpendaftaran'] ?>">
+                    <i class="bx bx-printer me-1"></i> Cetak Faktur
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Informasi Paket -->
-    <div class="col-12 col-lg-6 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-4">
-                    <h5 class="card-title mb-0">Informasi Paket</h5>
-                </div>
-                <?php if (isset($pendaftaran['foto']) && $pendaftaran['foto']): ?>
-                    <div class="text-center mb-3">
-                        <img src="<?= base_url('uploads/paket/' . $pendaftaran['foto']) ?>" alt="<?= $pendaftaran['namapaket'] ?>" class="img-fluid" style="max-height: 200px;">
-                    </div>
-                <?php endif; ?>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Nama Paket</div>
-                    <div class="col-md-8"><?= $pendaftaran['namapaket'] ?></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Kategori</div>
-                    <div class="col-md-8"><?= $pendaftaran['namakategori'] ?? 'Tidak ada kategori' ?></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Harga</div>
-                    <div class="col-md-8">Rp <?= number_format($pendaftaran['harga'], 0, ',', '.') ?></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Waktu Berangkat</div>
-                    <div class="col-md-8"><?= date('d F Y', strtotime($pendaftaran['waktuberangkat'])) ?></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 fw-bold">Durasi</div>
-                    <div class="col-md-8"><?= $pendaftaran['durasi'] ?> Hari</div>
+    <!-- Alert Messages -->
+    <?php if (session()->getFlashdata('success')) : ?>
+        <div class="alert alert-success border-0 bg-success alert-dismissible fade show py-2">
+            <div class="d-flex align-items-center">
+                <div class="font-35 text-white"><i class='bx bxs-check-circle'></i></div>
+                <div class="ms-3">
+                    <h6 class="mb-0 text-white">Berhasil!</h6>
+                    <div class="text-white"><?= session()->getFlashdata('success') ?></div>
                 </div>
             </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    </div>
+    <?php endif; ?>
 
-    <!-- Daftar Jamaah -->
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-4">
-                    <h5 class="card-title mb-0">Daftar Jamaah</h5>
+    <?php if (session()->getFlashdata('error')) : ?>
+        <div class="alert alert-danger border-0 bg-danger alert-dismissible fade show py-2">
+            <div class="d-flex align-items-center">
+                <div class="font-35 text-white"><i class='bx bxs-message-square-x'></i></div>
+                <div class="ms-3">
+                    <h6 class="mb-0 text-white">Error!</h6>
+                    <div class="text-white"><?= session()->getFlashdata('error') ?></div>
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-striped table-bordered">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>ID Jamaah</th>
-                                <th>NIK</th>
-                                <th>Nama Jamaah</th>
-                                <th>Jenis Kelamin</th>
-                                <th>Alamat</th>
-                                <th>No HP</th>
-                                <th>Email</th>
-                                <th>Dokumen</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($jamaahList)): ?>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
+    <div class="row">
+        <!-- Informasi Pendaftaran -->
+        <div class="col-12 col-lg-6 mb-4">
+            <div class="card radius-10">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h5 class="mb-0">Informasi Pendaftaran</h5>
+                        </div>
+                        <div class="ms-auto">
+                            <?php
+                            $badgeClass = 'bg-warning';
+                            $statusLabel = 'Menunggu';
+
+                            if ($pendaftaran['status'] === 'confirmed') {
+                                $badgeClass = 'bg-success';
+                                $statusLabel = 'Dikonfirmasi';
+                            } else if ($pendaftaran['status'] === 'cancelled') {
+                                $badgeClass = 'bg-danger';
+                                $statusLabel = 'Dibatalkan';
+                            } else if ($pendaftaran['status'] === 'completed') {
+                                $badgeClass = 'bg-info';
+                                $statusLabel = 'Selesai';
+                            }
+                            ?>
+                            <span class="badge rounded-pill <?= $badgeClass ?> px-3 py-2 fs-6"><?= $statusLabel ?></span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="table-responsive">
+                        <table class="table table-borderless mb-0">
+                            <tbody>
                                 <tr>
-                                    <td colspan="9" class="text-center">Tidak ada data jamaah</td>
+                                    <td width="40%" class="fw-bold">ID Pendaftaran</td>
+                                    <td width="60%"><?= $pendaftaran['idpendaftaran'] ?></td>
                                 </tr>
-                            <?php else: ?>
-                                <?php $no = 1;
-                                foreach ($jamaahList as $jamaah): ?>
-                                    <tr>
-                                        <td><?= $no++ ?></td>
-                                        <td><?= $jamaah['idjamaah'] ?></td>
-                                        <td><?= $jamaah['nik'] ?></td>
-                                        <td><?= $jamaah['namajamaah'] ?></td>
-                                        <td><?= $jamaah['jenkel'] == 'L' ? 'Laki-laki' : 'Perempuan' ?></td>
-                                        <td><?= $jamaah['alamat'] ?></td>
-                                        <td><?= $jamaah['nohpjamaah'] ?></td>
-                                        <td><?= $jamaah['emailjamaah'] ?? '-' ?></td>
-                                        <td>
-                                            <?php if (isset($dokumenJamaah[$jamaah['idjamaah']])): ?>
-                                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#dokumenModal<?= $jamaah['idjamaah'] ?>">
-                                                    <i class="bx bx-file"></i> Lihat Dokumen (<?= count($dokumenJamaah[$jamaah['idjamaah']]) ?>)
-                                                </button>
+                                <tr>
+                                    <td class="fw-bold">Nama Jamaah</td>
+                                    <td><?= $pendaftaran['nama'] ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Paket</td>
+                                    <td><?= $pendaftaran['namapaket'] ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Kategori</td>
+                                    <td><?= $pendaftaran['namakategori'] ?? 'Tidak ada kategori' ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Tanggal Daftar</td>
+                                    <td><?= date('d F Y', strtotime($pendaftaran['tanggaldaftar'])) ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Waktu Berangkat</td>
+                                    <td><?= date('d F Y', strtotime($pendaftaran['waktuberangkat'])) ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Durasi</td>
+                                    <td><?= $pendaftaran['durasi'] ?> Hari</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Total Bayar</td>
+                                    <td class="fw-bold text-success">Rp <?= number_format($pendaftaran['totalbayar'], 0, ',', '.') ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Sisa Bayar</td>
+                                    <td class="fw-bold <?= $pendaftaran['sisabayar'] > 0 ? 'text-danger' : 'text-success' ?>">
+                                        Rp <?= number_format($pendaftaran['sisabayar'], 0, ',', '.') ?>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                                                <!-- Modal Dokumen -->
-                                                <div class="modal fade" id="dokumenModal<?= $jamaah['idjamaah'] ?>" tabindex="-1" aria-labelledby="dokumenModalLabel<?= $jamaah['idjamaah'] ?>" aria-hidden="true">
-                                                    <div class="modal-dialog modal-lg">
-                                                        <div class="modal-content">
-                                                            <div class="modal-header">
-                                                                <h5 class="modal-title" id="dokumenModalLabel<?= $jamaah['idjamaah'] ?>">Dokumen <?= $jamaah['namajamaah'] ?></h5>
-                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                            </div>
-                                                            <div class="modal-body">
-                                                                <div class="row">
-                                                                    <?php foreach ($dokumenJamaah[$jamaah['idjamaah']] as $dokumen): ?>
-                                                                        <div class="col-md-6 mb-3">
-                                                                            <div class="card">
-                                                                                <div class="card-header">
-                                                                                    <h6 class="mb-0"><?= $dokumen['namadokumen'] ?></h6>
-                                                                                </div>
-                                                                                <div class="card-body text-center">
-                                                                                    <?php
-                                                                                    $fileUrl = base_url('uploads/dokumen/' . $dokumen['file']);
-                                                                                    $fileExt = pathinfo($dokumen['file'], PATHINFO_EXTENSION);
-                                                                                    if (in_array(strtolower($fileExt), ['jpg', 'jpeg', 'png', 'gif'])):
-                                                                                    ?>
-                                                                                        <img src="<?= $fileUrl ?>" alt="<?= $dokumen['namadokumen'] ?>" class="img-fluid mb-2" style="max-height: 200px;">
-                                                                                    <?php else: ?>
-                                                                                        <i class="bx bx-file text-primary" style="font-size: 64px;"></i>
-                                                                                    <?php endif; ?>
-                                                                                    <div>
-                                                                                        <a href="<?= $fileUrl ?>" target="_blank" class="btn btn-sm btn-primary">
-                                                                                            <i class="bx bx-show"></i> Lihat Dokumen
-                                                                                        </a>
+        <!-- Informasi Paket -->
+        <div class="col-12 col-lg-6 mb-4">
+            <div class="card radius-10">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h5 class="mb-0">Informasi Paket</h5>
+                        </div>
+                    </div>
+                    <hr>
+                    <?php if (isset($pendaftaran['foto']) && $pendaftaran['foto']): ?>
+                        <div class="text-center mb-3">
+                            <a href="<?= base_url('uploads/paket/' . $pendaftaran['foto']) ?>" class="glightbox">
+                                <img src="<?= base_url('uploads/paket/' . $pendaftaran['foto']) ?>" alt="<?= $pendaftaran['namapaket'] ?>" class="img-fluid rounded" style="max-height: 200px;">
+                            </a>
+                        </div>
+                    <?php endif; ?>
+                    <div class="table-responsive">
+                        <table class="table table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <td width="40%" class="fw-bold">Nama Paket</td>
+                                    <td width="60%"><?= $pendaftaran['namapaket'] ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Kategori</td>
+                                    <td><?= $pendaftaran['namakategori'] ?? 'Tidak ada kategori' ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Harga</td>
+                                    <td class="fw-bold text-success">Rp <?= number_format($pendaftaran['harga'], 0, ',', '.') ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Waktu Berangkat</td>
+                                    <td><?= date('d F Y', strtotime($pendaftaran['waktuberangkat'])) ?></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Durasi</td>
+                                    <td><?= $pendaftaran['durasi'] ?> Hari</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daftar Jamaah -->
+        <div class="col-12 mb-4">
+            <div class="card radius-10">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h5 class="mb-0">Daftar Jamaah</h5>
+                        </div>
+                        <div class="ms-auto">
+                            <span class="badge bg-primary rounded-pill"><?= count($jamaahList) ?> Jamaah</span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="table-responsive">
+                        <table id="tableJamaah" class="table table-striped table-bordered align-middle" style="width:100%">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="5%">No</th>
+                                    <th width="10%">ID Jamaah</th>
+                                    <th>NIK</th>
+                                    <th>Nama Jamaah</th>
+                                    <th>Jenis Kelamin</th>
+                                    <th>Alamat</th>
+                                    <th>No HP</th>
+                                    <th>Email</th>
+                                    <th width="15%">Dokumen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($jamaahList)): ?>
+                                    <tr>
+                                        <td colspan="9" class="text-center">Tidak ada data jamaah</td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php $no = 1;
+                                    foreach ($jamaahList as $jamaah): ?>
+                                        <tr>
+                                            <td class="text-center"><?= $no++ ?></td>
+                                            <td><?= $jamaah['idjamaah'] ?></td>
+                                            <td><?= $jamaah['nik'] ?></td>
+                                            <td><?= $jamaah['namajamaah'] ?></td>
+                                            <td><?= $jamaah['jenkel'] == 'L' ? 'Laki-laki' : 'Perempuan' ?></td>
+                                            <td><?= $jamaah['alamat'] ?></td>
+                                            <td><?= $jamaah['nohpjamaah'] ?></td>
+                                            <td><?= $jamaah['emailjamaah'] ?? '-' ?></td>
+                                            <td class="text-center">
+                                                <?php if (isset($dokumenJamaah[$jamaah['idjamaah']])): ?>
+                                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#dokumenModal<?= $jamaah['idjamaah'] ?>">
+                                                        <i class="bx bx-file"></i> Lihat Dokumen (<?= count($dokumenJamaah[$jamaah['idjamaah']]) ?>)
+                                                    </button>
+
+                                                    <!-- Modal Dokumen -->
+                                                    <div class="modal fade" id="dokumenModal<?= $jamaah['idjamaah'] ?>" tabindex="-1" aria-labelledby="dokumenModalLabel<?= $jamaah['idjamaah'] ?>" aria-hidden="true">
+                                                        <div class="modal-dialog modal-lg">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title" id="dokumenModalLabel<?= $jamaah['idjamaah'] ?>">Dokumen <?= $jamaah['namajamaah'] ?></h5>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <div class="row">
+                                                                        <?php foreach ($dokumenJamaah[$jamaah['idjamaah']] as $dokumen): ?>
+                                                                            <div class="col-md-6 mb-3">
+                                                                                <div class="card border">
+                                                                                    <div class="card-header bg-light">
+                                                                                        <h6 class="mb-0"><?= $dokumen['namadokumen'] ?></h6>
+                                                                                    </div>
+                                                                                    <div class="card-body text-center">
+                                                                                        <?php
+                                                                                        $fileUrl = base_url('uploads/dokumen/' . $dokumen['file']);
+                                                                                        $fileExt = pathinfo($dokumen['file'], PATHINFO_EXTENSION);
+                                                                                        if (in_array(strtolower($fileExt), ['jpg', 'jpeg', 'png', 'gif'])):
+                                                                                        ?>
+                                                                                            <a href="<?= $fileUrl ?>" class="glightbox">
+                                                                                                <img src="<?= $fileUrl ?>" alt="<?= $dokumen['namadokumen'] ?>" class="img-fluid mb-2" style="max-height: 200px;">
+                                                                                            </a>
+                                                                                        <?php else: ?>
+                                                                                            <i class="bx bx-file text-primary" style="font-size: 64px;"></i>
+                                                                                        <?php endif; ?>
+                                                                                        <div class="mt-2">
+                                                                                            <a href="<?= $fileUrl ?>" target="_blank" class="btn btn-sm btn-primary">
+                                                                                                <i class="bx bx-show"></i> Lihat Dokumen
+                                                                                            </a>
+                                                                                            <a href="<?= $fileUrl ?>" download class="btn btn-sm btn-outline-primary">
+                                                                                                <i class="bx bx-download"></i> Download
+                                                                                            </a>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="card-footer text-muted small">
+                                                                                        Diupload: <?= date('d/m/Y H:i', strtotime($dokumen['created_at'])) ?>
                                                                                     </div>
                                                                                 </div>
-                                                                                <div class="card-footer text-muted small">
-                                                                                    Diupload: <?= date('d/m/Y H:i', strtotime($dokumen['created_at'])) ?>
-                                                                                </div>
                                                                             </div>
-                                                                        </div>
-                                                                    <?php endforeach; ?>
+                                                                        <?php endforeach; ?>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            <?php else: ?>
-                                                <span class="badge bg-warning">Belum ada dokumen</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                                                <?php else: ?>
+                                                    <span class="badge bg-warning">Belum ada dokumen</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Riwayat Pembayaran -->
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-4">
-                    <h5 class="card-title mb-0">Riwayat Pembayaran</h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-striped table-bordered">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>ID Pembayaran</th>
-                                <th>Tanggal Bayar</th>
-                                <th>Metode Pembayaran</th>
-                                <th>Tipe Pembayaran</th>
-                                <th>Jumlah Bayar</th>
-                                <th>Bukti Bayar</th>
-                                <th>Status</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($pembayaran)): ?>
+        <!-- Riwayat Pembayaran -->
+        <div class="col-12">
+            <div class="card radius-10">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <h5 class="mb-0">Riwayat Pembayaran</h5>
+                        </div>
+                        <div class="ms-auto">
+                            <span class="badge bg-primary rounded-pill"><?= count($pembayaran) ?> Pembayaran</span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="table-responsive">
+                        <table id="tablePembayaran" class="table table-striped table-bordered align-middle" style="width:100%">
+                            <thead class="table-light">
                                 <tr>
-                                    <td colspan="9" class="text-center">Belum ada pembayaran</td>
+                                    <th width="5%">No</th>
+                                    <th>ID Pembayaran</th>
+                                    <th>Tanggal Bayar</th>
+                                    <th>Metode Pembayaran</th>
+                                    <th>Tipe Pembayaran</th>
+                                    <th>Jumlah Bayar</th>
+                                    <th>Bukti Bayar</th>
+                                    <th>Status</th>
+                                    <th width="15%">Aksi</th>
                                 </tr>
-                            <?php else: ?>
-                                <?php $no = 1;
-                                foreach ($pembayaran as $bayar): ?>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($pembayaran)): ?>
                                     <tr>
-                                        <td><?= $no++ ?></td>
-                                        <td><?= $bayar['idpembayaran'] ?></td>
-                                        <td><?= date('d F Y', strtotime($bayar['tanggalbayar'])) ?></td>
-                                        <td><?= $bayar['metodepembayaran'] ?></td>
-                                        <td><?= $bayar['tipepembayaran'] ?></td>
-                                        <td>Rp <?= number_format($bayar['jumlahbayar'], 0, ',', '.') ?></td>
-                                        <td>
-                                            <a href="<?= base_url('uploads/pembayaran/' . $bayar['buktibayar']) ?>" target="_blank" class="btn btn-sm btn-info">
-                                                <i class="bx bx-image"></i> Lihat Bukti
-                                            </a>
-                                        </td>
-                                        <td>
-                                            <?php if ($bayar['statuspembayaran']): ?>
-                                                <span class="badge bg-success">Dikonfirmasi</span>
-                                            <?php else: ?>
-                                                <span class="badge bg-warning">Menunggu Konfirmasi</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php if (!$bayar['statuspembayaran']): ?>
-                                                <button type="button" class="btn btn-sm btn-success btn-konfirmasi-pembayaran" data-id="<?= $bayar['idpembayaran'] ?>">
-                                                    <i class="bx bx-check"></i> Konfirmasi
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-danger btn-tolak-pembayaran" data-id="<?= $bayar['idpembayaran'] ?>">
-                                                    <i class="bx bx-x"></i> Tolak
-                                                </button>
-                                            <?php else: ?>
-                                                <span class="text-muted">Tidak ada aksi</span>
-                                            <?php endif; ?>
-                                        </td>
+                                        <td colspan="9" class="text-center">Belum ada pembayaran</td>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                                <?php else: ?>
+                                    <?php $no = 1;
+                                    foreach ($pembayaran as $bayar): ?>
+                                        <tr>
+                                            <td class="text-center"><?= $no++ ?></td>
+                                            <td><?= $bayar['idpembayaran'] ?></td>
+                                            <td><?= date('d F Y', strtotime($bayar['tanggalbayar'])) ?></td>
+                                            <td><?= $bayar['metodepembayaran'] ?></td>
+                                            <td><?= $bayar['tipepembayaran'] ?></td>
+                                            <td class="text-end">Rp <?= number_format($bayar['jumlahbayar'], 0, ',', '.') ?></td>
+                                            <td class="text-center">
+                                                <a href="<?= base_url('uploads/pembayaran/' . $bayar['buktibayar']) ?>" class="btn btn-sm btn-info glightbox" data-gallery="pembayaran-gallery" data-glightbox="title: Bukti Pembayaran <?= $bayar['idpembayaran'] ?>">
+                                                    <i class="bx bx-image"></i> Lihat Bukti
+                                                </a>
+                                            </td>
+                                            <td class="text-center">
+                                                <?php if ($bayar['statuspembayaran']): ?>
+                                                    <span class="badge bg-success rounded-pill">Dikonfirmasi</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-warning rounded-pill">Menunggu Konfirmasi</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="text-center">
+                                                <?php if (!$bayar['statuspembayaran']): ?>
+                                                    <div class="d-flex justify-content-center gap-1">
+                                                        <button type="button" class="btn btn-sm btn-success btn-konfirmasi-pembayaran" data-id="<?= $bayar['idpembayaran'] ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="Konfirmasi">
+                                                            <i class="bx bx-check"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-danger btn-tolak-pembayaran" data-id="<?= $bayar['idpembayaran'] ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="Tolak">
+                                                            <i class="bx bx-x"></i>
+                                                        </button>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="text-muted">Tidak ada aksi</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Modal Bukti Pembayaran tidak diperlukan lagi -->
+<?= $this->endSection() ?>
 
 <?= $this->section('js') ?>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM fully loaded');
+<!-- DataTable JS -->
+<script src="<?= base_url('assets') ?>/plugins/datatable/js/jquery.dataTables.min.js"></script>
+<script src="<?= base_url('assets') ?>/plugins/datatable/js/dataTables.bootstrap5.min.js"></script>
+<!-- Lightbox JS -->
+<script src="<?= base_url('assets') ?>/js/glightbox.min.js"></script>
+<!-- SweetAlert2 -->
+<script src="<?= base_url('assets') ?>/js/sweetalert2.all.min.js"></script>
 
-        // Debug: cek apakah tombol ada
-        console.log('Tombol konfirmasi:', document.querySelectorAll('.btn-konfirmasi-pembayaran').length);
-        console.log('Tombol tolak:', document.querySelectorAll('.btn-tolak-pembayaran').length);
+<script>
+    $(document).ready(function() {
+        // Inisialisasi DataTable
+        $('#tableJamaah').DataTable({
+            responsive: true,
+            language: {
+                search: "Cari:",
+                lengthMenu: "Tampilkan _MENU_ data",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+                infoFiltered: "(disaring dari _MAX_ total data)",
+                zeroRecords: "Tidak ada data yang cocok",
+                paginate: {
+                    first: "Pertama",
+                    last: "Terakhir",
+                    next: "Selanjutnya",
+                    previous: "Sebelumnya"
+                }
+            }
+        });
+
+        $('#tablePembayaran').DataTable({
+            responsive: true,
+            language: {
+                search: "Cari:",
+                lengthMenu: "Tampilkan _MENU_ data",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+                infoFiltered: "(disaring dari _MAX_ total data)",
+                zeroRecords: "Tidak ada data yang cocok",
+                paginate: {
+                    first: "Pertama",
+                    last: "Terakhir",
+                    next: "Selanjutnya",
+                    previous: "Sebelumnya"
+                }
+            }
+        });
+
+        // Inisialisasi tooltip
+        $('[data-bs-toggle="tooltip"]').tooltip();
+
+        // Inisialisasi GLightbox
+        const lightbox = GLightbox({
+            touchNavigation: true,
+            loop: true,
+            autoplayVideos: true
+        });
+
+        // Tombol cetak faktur
+        $('.btn-cetak-faktur').on('click', function() {
+            const id = $(this).data('id');
+            const url = '<?= base_url('admin/pendaftaran/cetak-faktur/') ?>' + id;
+            window.open(url, '_blank');
+        });
 
         // Konfirmasi pembayaran
-        document.querySelectorAll('.btn-konfirmasi-pembayaran').forEach(function(button) {
-            button.addEventListener('click', function() {
-                console.log('Tombol konfirmasi diklik');
-                const id = this.getAttribute('data-id');
-                console.log('ID Pembayaran:', id);
+        $('.btn-konfirmasi-pembayaran').on('click', function() {
+            const id = $(this).data('id');
 
-                Swal.fire({
-                    title: 'Konfirmasi Pembayaran',
-                    text: 'Apakah Anda yakin ingin mengkonfirmasi pembayaran ini?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Ya, Konfirmasi',
-                    cancelButtonText: 'Batal',
-                    confirmButtonColor: '#28a745',
-                    cancelButtonColor: '#6c757d'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Tambahkan CSRF token
-                        const csrfName = '<?= csrf_token() ?>';
-                        const csrfHash = '<?= csrf_hash() ?>';
+            Swal.fire({
+                title: 'Konfirmasi Pembayaran',
+                text: 'Apakah Anda yakin ingin mengkonfirmasi pembayaran ini?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Konfirmasi',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Tambahkan CSRF token
+                    const csrfName = '<?= csrf_token() ?>';
+                    const csrfHash = '<?= csrf_hash() ?>';
 
-                        // Gunakan XMLHttpRequest sebagai alternatif
-                        const xhr = new XMLHttpRequest();
-                        xhr.open('POST', '<?= base_url('admin/konfirmasi-pembayaran') ?>', true);
-                        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                        xhr.onload = function() {
-                            if (xhr.status === 200) {
-                                try {
-                                    const response = JSON.parse(xhr.responseText);
-                                    if (response.status) {
-                                        Swal.fire({
-                                            title: 'Berhasil!',
-                                            text: response.message,
-                                            icon: 'success',
-                                            confirmButtonColor: '#4e73df'
-                                        }).then(() => {
-                                            window.location.reload();
-                                        });
-                                    } else {
-                                        Swal.fire({
-                                            title: 'Gagal!',
-                                            text: response.message,
-                                            icon: 'error',
-                                            confirmButtonColor: '#4e73df'
-                                        });
-                                    }
-                                } catch (e) {
-                                    console.error('Error parsing JSON:', e);
-                                    Swal.fire({
-                                        title: 'Error!',
-                                        text: 'Terjadi kesalahan saat memproses respons server',
-                                        icon: 'error',
-                                        confirmButtonColor: '#4e73df'
-                                    });
-                                }
+                    $.ajax({
+                        url: '<?= base_url('admin/konfirmasi-pembayaran') ?>',
+                        type: 'POST',
+                        data: {
+                            id_pembayaran: id,
+                            aksi: 'confirm',
+                            [csrfName]: csrfHash
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.status) {
+                                Swal.fire({
+                                    title: 'Berhasil!',
+                                    text: response.message,
+                                    icon: 'success',
+                                    confirmButtonColor: '#4e73df'
+                                }).then(() => {
+                                    window.location.reload();
+                                });
                             } else {
                                 Swal.fire({
-                                    title: 'Error!',
-                                    text: 'Terjadi kesalahan saat mengirim permintaan',
+                                    title: 'Gagal!',
+                                    text: response.message,
                                     icon: 'error',
                                     confirmButtonColor: '#4e73df'
                                 });
                             }
-                        };
-                        xhr.onerror = function() {
+                        },
+                        error: function() {
                             Swal.fire({
                                 title: 'Error!',
-                                text: 'Terjadi kesalahan jaringan',
+                                text: 'Terjadi kesalahan saat memproses permintaan',
                                 icon: 'error',
                                 confirmButtonColor: '#4e73df'
                             });
-                        };
-
-                        const formData = new FormData();
-                        formData.append('id_pembayaran', id);
-                        formData.append('aksi', 'confirm');
-                        formData.append(csrfName, csrfHash);
-
-                        xhr.send(formData);
-                    }
-                });
+                        }
+                    });
+                }
             });
         });
 
         // Tolak pembayaran
-        document.querySelectorAll('.btn-tolak-pembayaran').forEach(function(button) {
-            button.addEventListener('click', function() {
-                console.log('Tombol tolak diklik');
-                const id = this.getAttribute('data-id');
-                console.log('ID Pembayaran:', id);
+        $('.btn-tolak-pembayaran').on('click', function() {
+            const id = $(this).data('id');
 
-                Swal.fire({
-                    title: 'Tolak Pembayaran',
-                    text: 'Apakah Anda yakin ingin menolak pembayaran ini?',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Ya, Tolak',
-                    cancelButtonText: 'Batal',
-                    confirmButtonColor: '#dc3545',
-                    cancelButtonColor: '#6c757d'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Tambahkan CSRF token
-                        const csrfName = '<?= csrf_token() ?>';
-                        const csrfHash = '<?= csrf_hash() ?>';
+            Swal.fire({
+                title: 'Tolak Pembayaran',
+                text: 'Apakah Anda yakin ingin menolak pembayaran ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Tolak',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Tambahkan CSRF token
+                    const csrfName = '<?= csrf_token() ?>';
+                    const csrfHash = '<?= csrf_hash() ?>';
 
-                        // Gunakan XMLHttpRequest sebagai alternatif
-                        const xhr = new XMLHttpRequest();
-                        xhr.open('POST', '<?= base_url('admin/konfirmasi-pembayaran') ?>', true);
-                        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                        xhr.onload = function() {
-                            if (xhr.status === 200) {
-                                try {
-                                    const response = JSON.parse(xhr.responseText);
-                                    if (response.status) {
-                                        Swal.fire({
-                                            title: 'Berhasil!',
-                                            text: response.message,
-                                            icon: 'success',
-                                            confirmButtonColor: '#4e73df'
-                                        }).then(() => {
-                                            window.location.reload();
-                                        });
-                                    } else {
-                                        Swal.fire({
-                                            title: 'Gagal!',
-                                            text: response.message,
-                                            icon: 'error',
-                                            confirmButtonColor: '#4e73df'
-                                        });
-                                    }
-                                } catch (e) {
-                                    console.error('Error parsing JSON:', e);
-                                    Swal.fire({
-                                        title: 'Error!',
-                                        text: 'Terjadi kesalahan saat memproses respons server',
-                                        icon: 'error',
-                                        confirmButtonColor: '#4e73df'
-                                    });
-                                }
+                    $.ajax({
+                        url: '<?= base_url('admin/konfirmasi-pembayaran') ?>',
+                        type: 'POST',
+                        data: {
+                            id_pembayaran: id,
+                            aksi: 'reject',
+                            [csrfName]: csrfHash
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.status) {
+                                Swal.fire({
+                                    title: 'Berhasil!',
+                                    text: response.message,
+                                    icon: 'success',
+                                    confirmButtonColor: '#4e73df'
+                                }).then(() => {
+                                    window.location.reload();
+                                });
                             } else {
                                 Swal.fire({
-                                    title: 'Error!',
-                                    text: 'Terjadi kesalahan saat mengirim permintaan',
+                                    title: 'Gagal!',
+                                    text: response.message,
                                     icon: 'error',
                                     confirmButtonColor: '#4e73df'
                                 });
                             }
-                        };
-                        xhr.onerror = function() {
+                        },
+                        error: function() {
                             Swal.fire({
                                 title: 'Error!',
-                                text: 'Terjadi kesalahan jaringan',
+                                text: 'Terjadi kesalahan saat memproses permintaan',
                                 icon: 'error',
                                 confirmButtonColor: '#4e73df'
                             });
-                        };
-
-                        const formData = new FormData();
-                        formData.append('id_pembayaran', id);
-                        formData.append('aksi', 'reject');
-                        formData.append(csrfName, csrfHash);
-
-                        xhr.send(formData);
-                    }
-                });
+                        }
+                    });
+                }
             });
         });
     });
 </script>
-<?= $this->endSection() ?>
-
 <?= $this->endSection() ?>

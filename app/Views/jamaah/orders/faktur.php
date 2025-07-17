@@ -28,11 +28,11 @@
                 <h2 class="text-xl font-bold text-gray-800">FAKTUR PEMBAYARAN</h2>
                 <p class="text-gray-600">No. Faktur: <?= $pembayaran['idpembayaran'] ?></p>
                 <p class="text-gray-600">Tanggal: <?= date('d F Y', strtotime($pembayaran['tanggalbayar'])) ?></p>
-                <p class="text-gray-600">Status:
-                    <?php if ($pembayaran['statuspembayaran']): ?>
-                        <span class="text-green-600 font-semibold">LUNAS</span>
+                <p class="text-gray-600">Tipe:
+                    <?php if ($pembayaran['tipepembayaran'] == 'DP'): ?>
+                        <span class="text-green-600 font-semibold">DP</span>
                     <?php else: ?>
-                        <span class="text-yellow-600 font-semibold">MENUNGGU KONFIRMASI</span>
+                        <span class="text-yellow-600 font-semibold">LUNAS</span>
                     <?php endif; ?>
                 </p>
             </div>

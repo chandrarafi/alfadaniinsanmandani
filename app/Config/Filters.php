@@ -111,7 +111,9 @@ class Filters extends BaseFilters
                 'admin/*',
                 'admin',
                 'pimpinan/*',
-                'pimpinan'
+                'pimpinan',
+                'jamaah/*',
+                'jamaah'
             ]
         ]
     ];
