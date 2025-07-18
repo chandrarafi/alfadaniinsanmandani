@@ -84,7 +84,7 @@ $routes->group('admin/jamaah', ['filter' => 'auth:admin'], function ($routes) {
 });
 
 // Laporan routes
-$routes->group('admin/laporan', ['filter' => 'auth:admin'], function ($routes) {
+$routes->group('admin/laporan', ['filter' => 'auth:admin,pimpinan'], function ($routes) {
     $routes->get('jamaah', 'Admin\Laporan::jamaah');
     $routes->get('jamaah/cetak', 'Admin\Laporan::cetakJamaahPDF');
     $routes->get('paket', 'Admin\Laporan::paket');
