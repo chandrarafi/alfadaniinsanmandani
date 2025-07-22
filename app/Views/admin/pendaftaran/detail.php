@@ -4,7 +4,7 @@
 <!-- DataTable CSS -->
 <link href="<?= base_url('assets') ?>/plugins/datatable/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
 <!-- Lightbox CSS -->
-<link href="<?= base_url('assets') ?>/css/glightbox.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/glightbox@3.2.0/dist/css/glightbox.min.css" rel="stylesheet" />
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -348,14 +348,16 @@
                                                 </a>
                                             </td>
                                             <td class="text-center">
-                                                <?php if ($bayar['statuspembayaran']): ?>
+                                                <?php if ($bayar['statuspembayaran'] == 1): ?>
                                                     <span class="badge bg-success rounded-pill">Dikonfirmasi</span>
+                                                <?php elseif ($bayar['statuspembayaran'] == 2): ?>
+                                                    <span class="badge bg-danger rounded-pill">Ditolak</span>
                                                 <?php else: ?>
                                                     <span class="badge bg-warning rounded-pill">Menunggu Konfirmasi</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td class="text-center">
-                                                <?php if (!$bayar['statuspembayaran']): ?>
+                                                <?php if ($bayar['statuspembayaran'] == 0): ?>
                                                     <div class="d-flex justify-content-center gap-1">
                                                         <button type="button" class="btn btn-sm btn-success btn-konfirmasi-pembayaran" data-id="<?= $bayar['idpembayaran'] ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="Konfirmasi">
                                                             <i class="bx bx-check"></i>
@@ -386,9 +388,11 @@
 <script src="<?= base_url('assets') ?>/plugins/datatable/js/jquery.dataTables.min.js"></script>
 <script src="<?= base_url('assets') ?>/plugins/datatable/js/dataTables.bootstrap5.min.js"></script>
 <!-- Lightbox JS -->
-<script src="<?= base_url('assets') ?>/js/glightbox.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/glightbox@3.2.0/dist/js/glightbox.min.js"></script>
 <!-- SweetAlert2 -->
-<script src="<?= base_url('assets') ?>/js/sweetalert2.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<!-- Perfect Scrollbar -->
+<script src="<?= base_url('assets') ?>/plugins/perfect-scrollbar/js/perfect-scrollbar.js"></script>
 
 <script>
     $(document).ready(function() {
@@ -439,6 +443,22 @@
             autoplayVideos: true
         });
 
+        // Inisialisasi PerfectScrollbar jika ada
+        try {
+            if (typeof PerfectScrollbar !== 'undefined') {
+                const scrollables = document.querySelectorAll('.scrollable');
+                if (scrollables.length > 0) {
+                    scrollables.forEach(el => {
+                        new PerfectScrollbar(el, {
+                            wheelPropagation: false
+                        });
+                    });
+                }
+            }
+        } catch (error) {
+            console.warn('PerfectScrollbar tidak tersedia:', error);
+        }
+
         // Tombol cetak faktur
         $('.btn-cetak-faktur').on('click', function() {
             const id = $(this).data('id');
@@ -449,6 +469,7 @@
         // Konfirmasi pembayaran
         $('.btn-konfirmasi-pembayaran').on('click', function() {
             const id = $(this).data('id');
+            console.log('Konfirmasi pembayaran ID:', id);
 
             Swal.fire({
                 title: 'Konfirmasi Pembayaran',
@@ -465,6 +486,11 @@
                     const csrfName = '<?= csrf_token() ?>';
                     const csrfHash = '<?= csrf_hash() ?>';
 
+                    console.log('Mengirim request konfirmasi pembayaran...');
+                    console.log('CSRF Token:', csrfName, csrfHash);
+                    console.log('ID Pembayaran:', id);
+
+                    // Gunakan pendekatan yang lebih sederhana
                     $.ajax({
                         url: '<?= base_url('admin/konfirmasi-pembayaran') ?>',
                         type: 'POST',
@@ -475,6 +501,7 @@
                         },
                         dataType: 'json',
                         success: function(response) {
+                            console.log('Response konfirmasi:', response);
                             if (response.status) {
                                 Swal.fire({
                                     title: 'Berhasil!',
@@ -493,7 +520,8 @@
                                 });
                             }
                         },
-                        error: function() {
+                        error: function(xhr, status, error) {
+                            console.error('Error konfirmasi:', xhr.responseText);
                             Swal.fire({
                                 title: 'Error!',
                                 text: 'Terjadi kesalahan saat memproses permintaan',
@@ -509,6 +537,7 @@
         // Tolak pembayaran
         $('.btn-tolak-pembayaran').on('click', function() {
             const id = $(this).data('id');
+            console.log('Tolak pembayaran ID:', id);
 
             Swal.fire({
                 title: 'Tolak Pembayaran',
@@ -525,16 +554,26 @@
                     const csrfName = '<?= csrf_token() ?>';
                     const csrfHash = '<?= csrf_hash() ?>';
 
+                    console.log('Mengirim request tolak pembayaran...');
+                    console.log('CSRF Token:', csrfName, csrfHash);
+                    console.log('ID Pembayaran:', id);
+
+                    // Gunakan pendekatan yang lebih sederhana dengan debugging tambahan
+                    const requestData = {
+                        id_pembayaran: id,
+                        aksi: 'reject',
+                        [csrfName]: csrfHash
+                    };
+
+                    console.log('Request data:', requestData);
+
                     $.ajax({
                         url: '<?= base_url('admin/konfirmasi-pembayaran') ?>',
                         type: 'POST',
-                        data: {
-                            id_pembayaran: id,
-                            aksi: 'reject',
-                            [csrfName]: csrfHash
-                        },
+                        data: requestData,
                         dataType: 'json',
                         success: function(response) {
+                            console.log('Response tolak:', response);
                             if (response.status) {
                                 Swal.fire({
                                     title: 'Berhasil!',
@@ -542,21 +581,26 @@
                                     icon: 'success',
                                     confirmButtonColor: '#4e73df'
                                 }).then(() => {
+                                    console.log('Reload halaman setelah tolak pembayaran');
                                     window.location.reload();
                                 });
                             } else {
+                                console.error('Error response:', response);
                                 Swal.fire({
                                     title: 'Gagal!',
-                                    text: response.message,
+                                    text: response.message || 'Terjadi kesalahan saat menolak pembayaran',
                                     icon: 'error',
                                     confirmButtonColor: '#4e73df'
                                 });
                             }
                         },
-                        error: function() {
+                        error: function(xhr, status, error) {
+                            console.error('Error tolak:', xhr.responseText);
+                            console.error('Status:', status);
+                            console.error('Error:', error);
                             Swal.fire({
                                 title: 'Error!',
-                                text: 'Terjadi kesalahan saat memproses permintaan',
+                                text: 'Terjadi kesalahan saat memproses permintaan: ' + error,
                                 icon: 'error',
                                 confirmButtonColor: '#4e73df'
                             });

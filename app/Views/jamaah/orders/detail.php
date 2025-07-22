@@ -131,8 +131,10 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $bayar['metodepembayaran'] ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $bayar['tipepembayaran'] ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <?php if ($bayar['statuspembayaran']): ?>
+                                <?php if ($bayar['statuspembayaran'] == 1): ?>
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Dikonfirmasi</span>
+                                <?php elseif ($bayar['statuspembayaran'] == 2): ?>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Ditolak</span>
                                 <?php else: ?>
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Menunggu Konfirmasi</span>
                                 <?php endif; ?>

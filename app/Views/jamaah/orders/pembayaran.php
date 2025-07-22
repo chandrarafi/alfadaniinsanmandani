@@ -293,9 +293,19 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?= $p['tipepembayaran'] ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Rp <?= number_format($p['jumlahbayar'], 0, ',', '.') ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?= $p['statuspembayaran'] ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' ?>">
-                                        <?= $p['statuspembayaran'] ? 'Dikonfirmasi' : 'Menunggu Konfirmasi' ?>
-                                    </span>
+                                    <?php if ($p['statuspembayaran'] == 1): ?>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            Dikonfirmasi
+                                        </span>
+                                    <?php elseif ($p['statuspembayaran'] == 2): ?>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                            Ditolak
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                            Menunggu Konfirmasi
+                                        </span>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <?php if (!empty($p['buktibayar'])): ?>
@@ -317,7 +327,6 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="<?= base_url('assets/js/countdown-timer.js') ?>"></script>
 <script>
     $(document).ready(function() {
         // Tampilkan informasi sesuai metode pembayaran
@@ -343,91 +352,141 @@
             updatePaymentInfo();
         });
 
-        // Inisialisasi WebSocket
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${wsProtocol}//${window.location.hostname}:8080`;
-        let socket;
+        // Variabel untuk menyimpan status koneksi WebSocket
+        let isConnected = false;
+        let reconnectAttempts = 0;
+        let maxReconnectAttempts = 3;
+        let socket = null;
+        let reconnectTimeout = null;
 
-        function connectWebSocket() {
+        // Inisialisasi WebSocket hanya jika status pendaftaran pending
+        if ('<?= isset($pendaftaran['status']) ? $pendaftaran['status'] : '' ?>' === 'pending') {
+            initializeWebSocket();
+        }
+
+        // Fungsi untuk inisialisasi WebSocket
+        function initializeWebSocket() {
+            // Hentikan reconnect timeout jika ada
+            if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
+                reconnectTimeout = null;
+            }
+
+            // Jika sudah mencapai batas percobaan koneksi, hentikan
+            if (reconnectAttempts >= maxReconnectAttempts) {
+                console.log('Reached maximum reconnect attempts. Giving up.');
+                return;
+            }
+
+            // Jika sudah terhubung, jangan buat koneksi baru
+            if (isConnected && socket && socket.readyState === WebSocket.OPEN) {
+                console.log('WebSocket already connected');
+                return;
+            }
+
             try {
+                // Gunakan protokol yang sesuai dengan protokol halaman
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${wsProtocol}//${window.location.hostname}:8080`;
+
+                console.log('Connecting to WebSocket:', wsUrl);
                 socket = new WebSocket(wsUrl);
 
                 socket.onopen = function(e) {
                     console.log('WebSocket connected');
+                    isConnected = true;
+                    reconnectAttempts = 0; // Reset percobaan koneksi
                 };
 
                 socket.onmessage = function(event) {
-                    const data = JSON.parse(event.data);
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log('WebSocket message received:', data);
 
-                    // Handle pesan dari server
-                    if (data.type === 'pendaftaran_cancelled' && data.pendaftaran_id === '<?= $pendaftaran['idpendaftaran'] ?>') {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Pendaftaran Dibatalkan',
-                            text: data.message,
-                            confirmButtonColor: '#4F46E5'
-                        }).then(function() {
-                            window.location.reload();
-                        });
-                    }
-                    // Handle payment_received
-                    else if (data.type === 'payment_received' && data.pendaftaran_id === '<?= $pendaftaran['idpendaftaran'] ?>') {
-                        // Hentikan timer jika flag timer_stop=true
-                        if (data.timer_stop && window.countdownTimer) {
-                            window.countdownTimer.stopTimer();
-
-                            // Tampilkan notifikasi
+                        // Handle pesan dari server
+                        if (data.type === 'pendaftaran_cancelled' && data.pendaftaran_id === '<?= $pendaftaran['idpendaftaran'] ?>') {
                             Swal.fire({
-                                icon: 'success',
-                                title: 'Pembayaran Diterima',
-                                text: data.message || 'Pembayaran Anda telah diterima dan sedang menunggu konfirmasi admin.',
+                                icon: 'error',
+                                title: 'Pendaftaran Dibatalkan',
+                                text: data.message || 'Pendaftaran telah dibatalkan',
                                 confirmButtonColor: '#4F46E5'
+                            }).then(function() {
+                                window.location.reload();
                             });
                         }
+                        // Handle payment_received
+                        else if (data.type === 'payment_received' && data.pendaftaran_id === '<?= $pendaftaran['idpendaftaran'] ?>') {
+                            // Hentikan timer jika flag timer_stop=true
+                            if (data.timer_stop && window.countdownTimer) {
+                                window.countdownTimer.stopTimer();
+
+                                // Tampilkan notifikasi
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Pembayaran Diterima',
+                                    text: data.message || 'Pembayaran Anda telah diterima dan sedang menunggu konfirmasi admin.',
+                                    confirmButtonColor: '#4F46E5'
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error parsing WebSocket message:', error);
                     }
                 };
 
                 socket.onerror = function(error) {
                     console.error('WebSocket error:', error);
-                    // Coba hubungkan kembali setelah 5 detik
-                    setTimeout(connectWebSocket, 5000);
+                    isConnected = false;
                 };
 
                 socket.onclose = function(event) {
                     console.log('WebSocket connection closed');
-                    // Coba hubungkan kembali setelah 5 detik
-                    setTimeout(connectWebSocket, 5000);
+                    isConnected = false;
+
+                    // Coba reconnect setelah beberapa detik, tapi hanya jika belum mencapai batas percobaan
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        console.log(`WebSocket reconnect attempt ${reconnectAttempts}/${maxReconnectAttempts} in 5 seconds...`);
+
+                        // Tunggu 5 detik sebelum mencoba lagi
+                        reconnectTimeout = setTimeout(initializeWebSocket, 5000);
+                    }
                 };
             } catch (e) {
                 console.error('WebSocket connection failed:', e);
-                // Coba hubungkan kembali setelah 5 detik
-                setTimeout(connectWebSocket, 5000);
+                isConnected = false;
             }
         }
-
-        // Hubungkan ke WebSocket
-        connectWebSocket();
 
         // Jalankan countdown jika status pending dan ada expired_at
         if ('<?= isset($pendaftaran['status']) ? $pendaftaran['status'] : '' ?>' === 'pending') {
             // Ambil elemen countdown
             const countdownEl = $('#countdown');
 
-            // Jalankan timer hanya jika elemen countdown ada (expired_at tidak null)
-            if (countdownEl.length > 0) {
+            // Jalankan timer hanya jika elemen countdown ada dan memiliki data expired-at
+            if (countdownEl.length > 0 && countdownEl.data('expired-at')) {
                 const expiredAtStr = countdownEl.data('expired-at');
+                console.log('Expired at:', expiredAtStr);
 
-                // Inisialisasi dan jalankan countdown timer
-                const countdownTimer = new CountdownTimer(
-                    'countdown',
-                    'countdown-container',
-                    expiredAtStr,
-                    'formPembayaran'
-                );
-                countdownTimer.start();
+                // Pastikan CountdownTimer tersedia
+                if (typeof CountdownTimer === 'function') {
+                    // Inisialisasi dan jalankan countdown timer
+                    const countdownTimer = new CountdownTimer(
+                        'countdown',
+                        'countdown-container',
+                        expiredAtStr,
+                        'formPembayaran'
+                    );
+                    countdownTimer.start();
 
-                // Simpan instance countdownTimer ke window agar dapat diakses di luar scope
-                window.countdownTimer = countdownTimer;
+                    // Simpan instance countdownTimer ke window agar dapat diakses di luar scope
+                    window.countdownTimer = countdownTimer;
+                } else {
+                    console.error('CountdownTimer class not available!');
+                    countdownEl.text('Timer tidak tersedia');
+                }
+            } else {
+                console.log('Countdown element not found or missing expired-at data');
             }
         }
 

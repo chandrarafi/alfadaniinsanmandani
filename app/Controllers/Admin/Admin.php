@@ -146,53 +146,71 @@ class Admin extends BaseController
             return $this->response->setJSON(['status' => false, 'message' => 'Pendaftaran terkait tidak ditemukan']);
         }
 
-        if ($aksi === 'confirm') {
-            // Konfirmasi pembayaran
-            $this->pembayaranModel->update($idPembayaran, ['statuspembayaran' => true]);
-            log_message('debug', 'Pembayaran dikonfirmasi: ID=' . $idPembayaran);
+        try {
+            if ($aksi === 'confirm') {
+                // Konfirmasi pembayaran
+                $this->pembayaranModel->update($idPembayaran, ['statuspembayaran' => true]);
+                log_message('debug', 'Pembayaran dikonfirmasi: ID=' . $idPembayaran);
 
-            // Update sisa bayar
-            $sisaBayarBaru = $pendaftaran['sisabayar'] - $pembayaran['jumlahbayar'];
-            if ($sisaBayarBaru < 0) $sisaBayarBaru = 0;
-            $this->pendaftaranModel->update($pembayaran['pendaftaranid'], ['sisabayar' => $sisaBayarBaru]);
-            log_message('debug', 'Sisa bayar diupdate: ' . $pendaftaran['sisabayar'] . ' -> ' . $sisaBayarBaru);
+                // Update sisa bayar
+                $sisaBayarBaru = $pendaftaran['sisabayar'] - $pembayaran['jumlahbayar'];
+                if ($sisaBayarBaru < 0) $sisaBayarBaru = 0;
+                $this->pendaftaranModel->update($pembayaran['pendaftaranid'], ['sisabayar' => $sisaBayarBaru]);
+                log_message('debug', 'Sisa bayar diupdate: ' . $pendaftaran['sisabayar'] . ' -> ' . $sisaBayarBaru);
 
-            // Jika sisa bayar sudah 0 atau kurang, ubah status pendaftaran menjadi 'completed'
-            if ($sisaBayarBaru <= 0) {
-                $this->pendaftaranModel->update($pembayaran['pendaftaranid'], ['status' => 'completed']);
-                log_message('debug', 'Status pendaftaran diubah menjadi completed: ID=' . $pembayaran['pendaftaranid']);
-            } else {
-                // Jika masih ada sisa pembayaran dan status masih 'pending', ubah menjadi 'confirmed'
-                if ($pendaftaran['status'] === 'pending') {
-                    $this->pendaftaranModel->update($pembayaran['pendaftaranid'], ['status' => 'confirmed']);
-                    log_message('debug', 'Status pendaftaran diubah dari pending menjadi confirmed: ID=' . $pembayaran['pendaftaranid']);
+                // Jika sisa bayar sudah 0 atau kurang, ubah status pendaftaran menjadi 'completed'
+                if ($sisaBayarBaru <= 0) {
+                    $this->pendaftaranModel->update($pembayaran['pendaftaranid'], ['status' => 'completed']);
+                    log_message('debug', 'Status pendaftaran diubah menjadi completed: ID=' . $pembayaran['pendaftaranid']);
+                } else {
+                    // Jika masih ada sisa pembayaran dan status masih 'pending', ubah menjadi 'confirmed'
+                    if ($pendaftaran['status'] === 'pending') {
+                        $this->pendaftaranModel->update($pembayaran['pendaftaranid'], ['status' => 'confirmed']);
+                        log_message('debug', 'Status pendaftaran diubah dari pending menjadi confirmed: ID=' . $pembayaran['pendaftaranid']);
+                    }
+                    // Jika status sudah 'confirmed' atau 'completed', tidak perlu diubah
                 }
-                // Jika status sudah 'confirmed' atau 'completed', tidak perlu diubah
+
+                $message = 'Pembayaran berhasil dikonfirmasi';
+            } else {
+                // Tolak pembayaran - ubah status pembayaran menjadi 2 (ditolak)
+                // Pastikan kita menggunakan query builder langsung untuk memastikan update berjalan dengan benar
+                $db = \Config\Database::connect();
+                $result = $db->table('pembayaran')
+                    ->where('idpembayaran', $idPembayaran)
+                    ->update(['statuspembayaran' => 2, 'updated_at' => date('Y-m-d H:i:s')]);
+
+                if (!$result) {
+                    log_message('error', 'Gagal menolak pembayaran: ID=' . $idPembayaran);
+                    throw new \Exception('Gagal menolak pembayaran');
+                }
+
+                log_message('debug', 'Pembayaran ditolak: ID=' . $idPembayaran . ', Result: ' . ($result ? 'success' : 'failed'));
+
+                $message = 'Pembayaran ditolak';
             }
 
-            $message = 'Pembayaran berhasil dikonfirmasi';
-        } else {
-            // Tolak pembayaran - kembalikan sisa bayar ke nilai sebelumnya
-            $this->pembayaranModel->update($idPembayaran, ['statuspembayaran' => false, 'keterangan' => 'Pembayaran ditolak']);
-            log_message('debug', 'Pembayaran ditolak: ID=' . $idPembayaran);
+            // Kirim notifikasi melalui WebSocket
+            $this->sendToWebSocket([
+                'type' => 'pembayaran_updated',
+                'pembayaran_id' => $idPembayaran,
+                'pendaftaran_id' => $pembayaran['pendaftaranid'],
+                'status' => $aksi === 'confirm' ? 'confirmed' : 'rejected',
+                'message' => $message
+            ]);
 
-            $message = 'Pembayaran ditolak';
+            log_message('debug', 'Response: ' . $message);
+            return $this->response->setJSON([
+                'status' => true,
+                'message' => $message
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Error saat ' . ($aksi === 'confirm' ? 'konfirmasi' : 'penolakan') . ' pembayaran: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ]);
         }
-
-        // Kirim notifikasi melalui WebSocket
-        $this->sendToWebSocket([
-            'type' => 'pembayaran_updated',
-            'pembayaran_id' => $idPembayaran,
-            'pendaftaran_id' => $pembayaran['pendaftaranid'],
-            'status' => $aksi === 'confirm' ? 'confirmed' : 'rejected',
-            'message' => $message
-        ]);
-
-        log_message('debug', 'Response: ' . $message);
-        return $this->response->setJSON([
-            'status' => true,
-            'message' => $message
-        ]);
     }
 
     // Method untuk mengirim data ke WebSocket

@@ -83,7 +83,7 @@ class Jamaah extends BaseController
         $rules = [
             'nama' => 'required',
             'email' => 'required|valid_email',
-            'nik' => 'required|numeric|min_length[16]|max_length[16]',
+            'nik' => 'required|numeric|min_length[16]|max_length[16]|is_unique[jamaah.nik]',
             'jenkel' => 'required|in_list[L,P]',
             'alamat' => 'required',
             'nohpjamaah' => 'required|numeric'
@@ -101,7 +101,8 @@ class Jamaah extends BaseController
                 'required' => 'NIK harus diisi',
                 'numeric' => 'NIK harus berupa angka',
                 'min_length' => 'NIK harus 16 digit',
-                'max_length' => 'NIK harus 16 digit'
+                'max_length' => 'NIK harus 16 digit',
+                'is_unique' => 'NIK sudah terdaftar, silakan gunakan NIK lain'
             ],
             'jenkel' => [
                 'required' => 'Jenis kelamin harus dipilih',
@@ -147,10 +148,19 @@ class Jamaah extends BaseController
         $this->session->set('nama', $this->request->getPost('nama'));
         $this->session->set('email', $this->request->getPost('email'));
 
-        return $this->response->setJSON([
+        $response = [
             'status' => true,
             'message' => 'Profil berhasil diperbarui'
-        ]);
+        ];
+
+        // Jika ada halaman sebelumnya yang tersimpan, tambahkan ke response
+        if ($this->session->has('last_page')) {
+            $response['redirect'] = $this->session->get('last_page');
+            // Hapus session last_page
+            $this->session->remove('last_page');
+        }
+
+        return $this->response->setJSON($response);
     }
 
     public function changePassword()
@@ -364,6 +374,13 @@ class Jamaah extends BaseController
         $jamaah = $this->jamaahModel->getJamaahByUserId($userId);
         $mainJamaah = $this->jamaahModel->where('userid', $userId)->first();
 
+        // Cek kelengkapan data jamaah utama
+        if (!$mainJamaah || $this->isJamaahDataIncomplete($mainJamaah)) {
+            // Simpan halaman yang ingin diakses untuk redirect kembali setelah update profil
+            $this->session->set('last_page', current_url());
+            return redirect()->to('jamaah/profile')->with('warning', 'Mohon lengkapi data profil Anda terlebih dahulu sebelum melakukan pendaftaran.');
+        }
+
         // Daftar dokumen yang diperlukan
         $requiredDocs = [
             'KTP' => 'Kartu Tanda Penduduk',
@@ -381,6 +398,38 @@ class Jamaah extends BaseController
             'requiredDocs' => $requiredDocs,
             'jamaahutama' => $mainJamaah
         ]);
+    }
+
+    /**
+     * Memeriksa apakah data jamaah sudah lengkap
+     * 
+     * @param array $jamaah Data jamaah
+     * @return bool True jika data tidak lengkap, false jika lengkap
+     */
+    private function isJamaahDataIncomplete($jamaah)
+    {
+        // Daftar field yang wajib diisi
+        $requiredFields = [
+            'nik',
+            'namajamaah',
+            'jenkel',
+            'alamat',
+            'nohpjamaah'
+        ];
+
+        // Periksa setiap field
+        foreach ($requiredFields as $field) {
+            if (empty($jamaah[$field])) {
+                return true; // Data tidak lengkap
+            }
+        }
+
+        // Periksa panjang NIK
+        if (strlen($jamaah['nik']) != 16) {
+            return true; // NIK tidak valid
+        }
+
+        return false; // Data lengkap
     }
 
     public function savePendaftaran()
@@ -533,11 +582,35 @@ class Jamaah extends BaseController
             return redirect()->to('jamaah/orders')->with('error', 'Data pendaftaran tidak ditemukan');
         }
 
-        // Format waktu expired_at untuk JavaScript jika status pending
-        if (isset($pendaftaran['status']) && $pendaftaran['status'] === 'pending' && isset($pendaftaran['expired_at'])) {
+        // Jika status pending dan expired_at adalah null, atur expired_at ke 15 menit dari sekarang
+        if (
+            isset($pendaftaran['status']) && $pendaftaran['status'] === 'pending' &&
+            (!isset($pendaftaran['expired_at']) || $pendaftaran['expired_at'] === null)
+        ) {
+
+            // Set expired_at ke 15 menit dari sekarang
+            $expiredAt = new \DateTime('now', new \DateTimeZone('Asia/Jakarta'));
+            $expiredAt->modify('+15 minutes');
+
+            // Update pendaftaran dengan expired_at baru
+            $this->pendaftaranModel->update($idpendaftaran, [
+                'expired_at' => $expiredAt->format('Y-m-d H:i:s')
+            ]);
+
+            // Update data pendaftaran untuk view
+            $pendaftaran['expired_at'] = $expiredAt->format('Y-m-d H:i:s');
+
+            // Log untuk debugging
+            log_message('info', 'Setting expired_at for pendaftaran ' . $idpendaftaran . ' to ' . $pendaftaran['expired_at']);
+        }
+        // Format waktu expired_at untuk JavaScript jika status pending dan expired_at sudah ada
+        else if (isset($pendaftaran['status']) && $pendaftaran['status'] === 'pending' && isset($pendaftaran['expired_at'])) {
             // Pastikan format waktu sesuai dengan yang diharapkan oleh JavaScript
             $expiredAt = new \DateTime($pendaftaran['expired_at'], new \DateTimeZone('Asia/Jakarta'));
             $pendaftaran['expired_at'] = $expiredAt->format('Y-m-d H:i:s');
+
+            // Log untuk debugging
+            log_message('info', 'Formatting expired_at for pendaftaran ' . $idpendaftaran . ': ' . $pendaftaran['expired_at']);
         }
 
         $pembayaran = $this->pembayaranModel->getPembayaranByPendaftaranId($idpendaftaran);
@@ -726,6 +799,31 @@ class Jamaah extends BaseController
             ]);
         }
 
+        // Cek apakah NIK sudah digunakan
+        $existingNik = $this->jamaahModel->where('nik', $this->request->getPost('nik'))->first();
+        if ($existingNik) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => [
+                    'nik' => 'NIK sudah terdaftar, silakan gunakan NIK lain'
+                ]
+            ]);
+        }
+
+        // Cek apakah email sudah digunakan (jika ada)
+        $email = $this->request->getPost('email');
+        if ($email && $email !== '') {
+            $existingEmail = $this->jamaahModel->where('emailjamaah', $email)->first();
+            if ($existingEmail) {
+                return $this->response->setJSON([
+                    'status' => false,
+                    'errors' => [
+                        'email' => 'Email sudah terdaftar, silakan gunakan email lain'
+                    ]
+                ]);
+            }
+        }
+
         $userId = $this->session->get('id');
         // $ref = $this->request->getPost('ref') ?? null;
 
@@ -743,38 +841,48 @@ class Jamaah extends BaseController
             'jenkel' => $this->request->getPost('jenkel'),
             'alamat' => $this->request->getPost('alamat'),
             'nohpjamaah' => $this->request->getPost('nohp'),
-            'emailjamaah' => $this->request->getPost('email') ?? null,
+            'emailjamaah' => $email ?? null,
             'status' => true
         ];
 
-        $this->jamaahModel->insert($dataJamaah);
+        try {
+            $this->jamaahModel->insert($dataJamaah);
 
-        // Upload dokumen jamaah jika ada
-        $dokumenFiles = $this->request->getFiles();
-        if (!empty($dokumenFiles) && isset($dokumenFiles['dokumen'])) {
-            foreach ($dokumenFiles['dokumen'] as $namaDokumen => $file) {
-                if ($file->isValid() && !$file->hasMoved()) {
-                    $newName = $file->getRandomName();
-                    $file->move(ROOTPATH . 'public/uploads/dokumen', $newName);
+            // Upload dokumen jamaah jika ada
+            $dokumenFiles = $this->request->getFiles();
+            if (!empty($dokumenFiles) && isset($dokumenFiles['dokumen'])) {
+                foreach ($dokumenFiles['dokumen'] as $namaDokumen => $file) {
+                    if ($file->isValid() && !$file->hasMoved()) {
+                        $newName = $file->getRandomName();
+                        $file->move(ROOTPATH . 'public/uploads/dokumen', $newName);
 
-                    $dataDokumen = [
-                        'idjamaah' => $idJamaah,
-                        'namadokumen' => $namaDokumen,
-                        'file' => $newName
-                    ];
+                        $dataDokumen = [
+                            'idjamaah' => $idJamaah,
+                            'namadokumen' => $namaDokumen,
+                            'file' => $newName
+                        ];
 
-                    $this->dokumenModel->simpan($dataDokumen);
+                        $this->dokumenModel->simpan($dataDokumen);
+                    }
                 }
             }
+
+            $jamaah = $this->jamaahModel->find($idJamaah);
+
+            return $this->response->setJSON([
+                'status' => true,
+                'message' => 'Data jamaah berhasil ditambahkan',
+                'jamaah' => $jamaah
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Gagal menyimpan data jamaah',
+                'errors' => [
+                    'system' => $e->getMessage()
+                ]
+            ]);
         }
-
-        $jamaah = $this->jamaahModel->find($idJamaah);
-
-        return $this->response->setJSON([
-            'status' => true,
-            'message' => 'Data jamaah berhasil ditambahkan',
-            'jamaah' => $jamaah
-        ]);
     }
 
     public function tambahJamaahReferensi()
@@ -834,12 +942,39 @@ class Jamaah extends BaseController
         $userId = $this->session->get('id');
         $refJamaah = $this->request->getPost('ref_jamaah');
 
+        // Cek apakah NIK sudah digunakan
+        $existingNik = $this->jamaahModel->where('nik', $this->request->getPost('nik'))->first();
+        if ($existingNik) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => [
+                    'nik' => 'NIK sudah terdaftar, silakan gunakan NIK lain'
+                ]
+            ]);
+        }
+
+        // Cek apakah email sudah digunakan (jika ada)
+        $email = $this->request->getPost('email');
+        if ($email && $email !== '') {
+            $existingEmail = $this->jamaahModel->where('emailjamaah', $email)->first();
+            if ($existingEmail) {
+                return $this->response->setJSON([
+                    'status' => false,
+                    'errors' => [
+                        'email' => 'Email sudah terdaftar, silakan gunakan email lain'
+                    ]
+                ]);
+            }
+        }
+
         // Verifikasi bahwa jamaah referensi adalah milik user yang login
         $jamaahRef = $this->jamaahModel->find($refJamaah);
         if (!$jamaahRef || $jamaahRef['userid'] != $userId) {
             return $this->response->setJSON([
                 'status' => false,
-                'message' => 'Jamaah referensi tidak valid'
+                'errors' => [
+                    'ref_jamaah' => 'Jamaah referensi tidak valid'
+                ]
             ]);
         }
 
@@ -856,38 +991,48 @@ class Jamaah extends BaseController
             'jenkel' => $this->request->getPost('jenkel'),
             'alamat' => $this->request->getPost('alamat'),
             'nohpjamaah' => $this->request->getPost('nohp'),
-            'emailjamaah' => $this->request->getPost('email') ?? null,
+            'emailjamaah' => $email ?? null,
             'status' => true
         ];
 
-        $this->jamaahModel->insert($dataJamaah);
+        try {
+            $this->jamaahModel->insert($dataJamaah);
 
-        // Upload dokumen jamaah jika ada
-        $dokumenFiles = $this->request->getFiles();
-        if (!empty($dokumenFiles) && isset($dokumenFiles['dokumen'])) {
-            foreach ($dokumenFiles['dokumen'] as $namaDokumen => $file) {
-                if ($file->isValid() && !$file->hasMoved()) {
-                    $newName = $file->getRandomName();
-                    $file->move(ROOTPATH . 'public/uploads/dokumen', $newName);
+            // Upload dokumen jamaah jika ada
+            $dokumenFiles = $this->request->getFiles();
+            if (!empty($dokumenFiles) && isset($dokumenFiles['dokumen'])) {
+                foreach ($dokumenFiles['dokumen'] as $namaDokumen => $file) {
+                    if ($file->isValid() && !$file->hasMoved()) {
+                        $newName = $file->getRandomName();
+                        $file->move(ROOTPATH . 'public/uploads/dokumen', $newName);
 
-                    $dataDokumen = [
-                        'idjamaah' => $idJamaah,
-                        'namadokumen' => $namaDokumen,
-                        'file' => $newName
-                    ];
+                        $dataDokumen = [
+                            'idjamaah' => $idJamaah,
+                            'namadokumen' => $namaDokumen,
+                            'file' => $newName
+                        ];
 
-                    $this->dokumenModel->simpan($dataDokumen);
+                        $this->dokumenModel->simpan($dataDokumen);
+                    }
                 }
             }
+
+            $jamaah = $this->jamaahModel->find($idJamaah);
+
+            return $this->response->setJSON([
+                'status' => true,
+                'message' => 'Data jamaah referensi berhasil ditambahkan',
+                'jamaah' => $jamaah
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Gagal menyimpan data jamaah referensi',
+                'errors' => [
+                    'system' => $e->getMessage()
+                ]
+            ]);
         }
-
-        $jamaah = $this->jamaahModel->find($idJamaah);
-
-        return $this->response->setJSON([
-            'status' => true,
-            'message' => 'Data jamaah referensi berhasil ditambahkan',
-            'jamaah' => $jamaah
-        ]);
     }
 
     public function uploadDokumen()

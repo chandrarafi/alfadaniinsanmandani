@@ -20,6 +20,8 @@ class CountdownTimer {
     this.expiredAt = this.parseExpiredTime(expiredAtStr);
     this.interval = null;
 
+    console.log("CountdownTimer initialized with expiredAt:", this.expiredAt);
+
     // Periksa apakah sudah expired saat inisialisasi
     this.checkIfAlreadyExpired();
   }
@@ -31,9 +33,33 @@ class CountdownTimer {
    * @returns {Date} - Objek Date yang sudah diparse
    */
   parseExpiredTime(expiredAtStr) {
-    // Format waktu dari server: YYYY-MM-DD HH:MM:SS
-    // Konversi ke format ISO dengan timezone Asia/Jakarta (+07:00)
-    return new Date(expiredAtStr.replace(" ", "T") + "+07:00");
+    try {
+      // Format waktu dari server: YYYY-MM-DD HH:MM:SS
+      console.log("Parsing expired time:", expiredAtStr);
+
+      // Coba parse dengan timezone Asia/Jakarta
+      const parts = expiredAtStr.split(/[- :]/);
+      if (parts.length >= 6) {
+        // Format: YYYY-MM-DD HH:MM:SS
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1; // Bulan di JavaScript dimulai dari 0
+        const day = parseInt(parts[2]);
+        const hour = parseInt(parts[3]);
+        const minute = parseInt(parts[4]);
+        const second = parseInt(parts[5]);
+
+        // Buat Date object dengan timezone lokal
+        const date = new Date(year, month, day, hour, minute, second);
+        console.log("Parsed expired time:", date);
+        return date;
+      } else {
+        console.error("Invalid date format:", expiredAtStr);
+        return new Date(); // Fallback ke waktu sekarang
+      }
+    } catch (e) {
+      console.error("Error parsing expired time:", e);
+      return new Date(); // Fallback ke waktu sekarang
+    }
   }
 
   /**
@@ -43,7 +69,11 @@ class CountdownTimer {
     const now = new Date();
     const distance = this.expiredAt - now;
 
+    console.log("Current time:", now);
+    console.log("Distance (ms):", distance);
+
     if (distance <= 0) {
+      console.log("Already expired!");
       this.handleExpired();
       return true;
     }
@@ -54,14 +84,17 @@ class CountdownTimer {
    * Mulai countdown timer
    */
   start() {
-    if (!this.countdownEl) return;
+    if (!this.countdownEl) {
+      console.error("Countdown element not found!");
+      return;
+    }
 
     // Jika sudah expired, tidak perlu memulai countdown
     if (this.checkIfAlreadyExpired()) {
       return;
     }
 
-    console.log("Expired at:", this.expiredAt.toISOString());
+    console.log("Starting countdown timer. Expired at:", this.expiredAt);
 
     this.interval = setInterval(() => this.update(), 1000);
     this.update(); // Update pertama kali
@@ -74,9 +107,8 @@ class CountdownTimer {
     const now = new Date();
     const distance = this.expiredAt - now;
 
-    console.log("Current time:", now.toISOString(), "Distance (ms):", distance);
-
     if (distance <= 0) {
+      console.log("Timer expired during update!");
       this.handleExpired();
       return;
     }
@@ -100,16 +132,28 @@ class CountdownTimer {
    * Tangani ketika waktu habis
    */
   handleExpired() {
-    clearInterval(this.interval);
-    this.countdownEl.textContent = "00:00";
+    console.log("Handling expired timer");
+
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
+    }
+
+    if (this.countdownEl) {
+      this.countdownEl.textContent = "00:00";
+    }
 
     // Ubah warna container
-    this.containerEl.classList.remove("bg-yellow-50", "border-yellow-200");
-    this.containerEl.classList.add("bg-red-50", "border-red-200");
+    if (this.containerEl) {
+      this.containerEl.classList.remove("bg-yellow-50", "border-yellow-200");
+      this.containerEl.classList.add("bg-red-50", "border-red-200");
 
-    // Ubah warna teks
-    this.countdownEl.classList.remove("text-yellow-800");
-    this.countdownEl.classList.add("text-red-800");
+      // Ubah warna teks
+      if (this.countdownEl) {
+        this.countdownEl.classList.remove("text-yellow-800");
+        this.countdownEl.classList.add("text-red-800");
+      }
+    }
 
     // Nonaktifkan form pembayaran jika ada
     if (this.formEl) {
@@ -151,22 +195,46 @@ class CountdownTimer {
     }
 
     // Tampilkan pesan
-    Swal.fire({
-      icon: "error",
-      title: "Waktu Habis",
-      text: "Batas waktu pembayaran telah berakhir. Pendaftaran akan dibatalkan.",
-      confirmButtonColor: "#4F46E5",
-    }).then(
-      function () {
-        // Kirim request ke server untuk update status pendaftaran
-        this.updatePendaftaranStatus();
+    if (typeof Swal !== "undefined") {
+      Swal.fire({
+        icon: "error",
+        title: "Waktu Habis",
+        text: "Batas waktu pembayaran telah berakhir. Pendaftaran akan dibatalkan.",
+        confirmButtonColor: "#4F46E5",
+      }).then(
+        function () {
+          // Kirim request ke server untuk update status pendaftaran
+          this.updatePendaftaranStatus();
 
-        // Reload halaman setelah 2 detik
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      }.bind(this)
-    );
+          // Ambil base URL
+          const baseUrl =
+            document
+              .querySelector('meta[name="base-url"]')
+              ?.getAttribute("content") || "";
+
+          // Redirect ke halaman orders setelah 1 detik
+          setTimeout(() => {
+            window.location.href = baseUrl + "/jamaah/orders";
+          }, 1000);
+        }.bind(this)
+      );
+    } else {
+      console.error("SweetAlert2 is not defined");
+      // Fallback jika SweetAlert tidak tersedia
+      alert("Waktu pembayaran telah berakhir. Halaman akan dialihkan.");
+
+      // Kirim request ke server untuk update status pendaftaran
+      this.updatePendaftaranStatus();
+
+      // Ambil base URL
+      const baseUrl =
+        document
+          .querySelector('meta[name="base-url"]')
+          ?.getAttribute("content") || "";
+
+      // Redirect ke halaman orders
+      window.location.href = baseUrl + "/jamaah/orders";
+    }
   }
 
   /**
@@ -177,13 +245,19 @@ class CountdownTimer {
     const urlParts = window.location.pathname.split("/");
     const pendaftaranId = urlParts[urlParts.length - 1];
 
-    if (!pendaftaranId) return;
+    if (!pendaftaranId) {
+      console.error("Could not determine pendaftaran ID from URL");
+      return;
+    }
+
+    console.log("Updating pendaftaran status for ID:", pendaftaranId);
 
     // Kirim request ke server untuk update status
     const baseUrl =
       document
         .querySelector('meta[name="base-url"]')
         ?.getAttribute("content") || "";
+
     fetch(`${baseUrl}/jamaah/update-pendaftaran-status/${pendaftaranId}`, {
       method: "POST",
       headers: {
@@ -207,6 +281,7 @@ class CountdownTimer {
   stop() {
     if (this.interval) {
       clearInterval(this.interval);
+      this.interval = null;
     }
   }
 
@@ -214,6 +289,7 @@ class CountdownTimer {
    * Hentikan timer dan hilangkan elemen countdown
    */
   stopTimer() {
+    console.log("Stopping timer");
     this.stop();
 
     // Sembunyikan container timer

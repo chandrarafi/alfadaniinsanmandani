@@ -151,15 +151,16 @@
             <form id="formTambahJamaah" class="space-y-4 tab-content" data-tab="jamaah-baru">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-
                         <input type="hidden" name="ref_jamaah" value="<?= $jamaahutama['idjamaah'] ?>">
 
                         <label for="nik" class="block text-sm font-medium text-gray-700 mb-1">NIK</label>
                         <input type="text" id="nik" name="nik" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                        <div class="error-message text-red-500 text-sm mt-1 hidden" id="error-nik"></div>
                     </div>
                     <div>
                         <label for="nama" class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
                         <input type="text" id="nama" name="nama" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                        <div class="error-message text-red-500 text-sm mt-1 hidden" id="error-nama"></div>
                     </div>
                     <div>
                         <label for="jenkel" class="block text-sm font-medium text-gray-700 mb-1">Jenis Kelamin</label>
@@ -168,18 +169,22 @@
                             <option value="L">Laki-laki</option>
                             <option value="P">Perempuan</option>
                         </select>
+                        <div class="error-message text-red-500 text-sm mt-1 hidden" id="error-jenkel"></div>
                     </div>
                     <div>
                         <label for="nohp" class="block text-sm font-medium text-gray-700 mb-1">No. HP</label>
                         <input type="text" id="nohp" name="nohp" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                        <div class="error-message text-red-500 text-sm mt-1 hidden" id="error-nohp"></div>
                     </div>
                     <div class="md:col-span-2">
                         <label for="alamat" class="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
                         <textarea id="alamat" name="alamat" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" required></textarea>
+                        <div class="error-message text-red-500 text-sm mt-1 hidden" id="error-alamat"></div>
                     </div>
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email (Opsional)</label>
                         <input type="email" id="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                        <div class="error-message text-red-500 text-sm mt-1 hidden" id="error-email"></div>
                     </div>
                 </div>
 
@@ -410,21 +415,90 @@
             });
         });
 
-        // Submit form tambah jamaah
-        $('#formTambahJamaah').submit(function(e) {
+        // Form tambah jamaah
+        $('#formTambahJamaah').on('submit', function(e) {
             e.preventDefault();
 
+            // Reset error messages
+            $('.error-message').addClass('hidden').text('');
+
+            // Reset input styling
+            $('#nik, #nama, #jenkel, #nohp, #alamat, #email').removeClass('border-red-500 focus:border-red-500 focus:ring-red-500');
+
+            // Validasi client-side
+            let isValid = true;
+
+            // Validate NIK
+            const nik = $('#nik').val();
+            if (!nik) {
+                showInputError('nik', 'NIK harus diisi');
+                isValid = false;
+            } else if (!/^\d+$/.test(nik)) {
+                showInputError('nik', 'NIK harus berupa angka');
+                isValid = false;
+            } else if (nik.length !== 16) {
+                showInputError('nik', 'NIK harus 16 digit');
+                isValid = false;
+            }
+
+            // Validate Nama
+            const nama = $('#nama').val();
+            if (!nama) {
+                showInputError('nama', 'Nama lengkap harus diisi');
+                isValid = false;
+            }
+
+            // Validate Jenis Kelamin
+            const jenkel = $('#jenkel').val();
+            if (!jenkel) {
+                showInputError('jenkel', 'Jenis kelamin harus dipilih');
+                isValid = false;
+            }
+
+            // Validate No. HP
+            const nohp = $('#nohp').val();
+            if (!nohp) {
+                showInputError('nohp', 'Nomor HP harus diisi');
+                isValid = false;
+            } else if (!/^\d+$/.test(nohp)) {
+                showInputError('nohp', 'Nomor HP harus berupa angka');
+                isValid = false;
+            }
+
+            // Validate Alamat
+            const alamat = $('#alamat').val();
+            if (!alamat) {
+                showInputError('alamat', 'Alamat harus diisi');
+                isValid = false;
+            }
+
+            // Validate Email (optional)
+            const email = $('#email').val();
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showInputError('email', 'Format email tidak valid');
+                isValid = false;
+            }
+
+            // Jika validasi gagal, hentikan proses
+            if (!isValid) {
+                return false;
+            }
+
+            // Jika validasi berhasil, lanjutkan dengan AJAX
+            const formData = new FormData(this);
 
             $.ajax({
                 url: '<?= base_url('jamaah/tambah-jamaah') ?>',
                 type: 'POST',
-                data: $(this).serialize(),
+                data: formData,
+                processData: false,
+                contentType: false,
                 dataType: 'json',
                 beforeSend: function() {
                     // Tampilkan loading
                     Swal.fire({
                         title: 'Memproses...',
-                        text: 'Mohon tunggu sebentar',
+                        html: 'Mohon tunggu sebentar',
                         allowOutsideClick: false,
                         didOpen: () => {
                             Swal.showLoading();
@@ -433,79 +507,130 @@
                 },
                 success: function(response) {
                     if (response.status) {
+                        // Jika berhasil
                         Swal.fire({
                             icon: 'success',
                             title: 'Berhasil',
                             text: response.message,
                             confirmButtonColor: '#4F46E5'
-                        }).then(function() {
-                            // Tambahkan jamaah ke list
-                            const jamaah = response.jamaah;
-                            const jamaahCount = parseInt($('#jamaah_count').val()) + 1;
-
-                            const jamaahHtml = `
-                                <div class="jamaah-item border border-gray-200 rounded-lg p-3">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <h4 class="font-medium text-gray-700">Jamaah ${jamaahCount}</h4>
-                                        <button type="button" class="btn-remove-jamaah text-red-600 hover:text-red-800">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                    <input type="hidden" name="jamaah_ids[]" value="${jamaah.idjamaah}">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-                                            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" value="${jamaah.namajamaah}" readonly>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">NIK</label>
-                                            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" value="${jamaah.nik}" readonly>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-
-                            $('#jamaahList').append(jamaahHtml);
-                            $('#jamaah_count').val(jamaahCount);
-
-                            // Update total harga
-                            const totalHarga = <?= $paket['harga'] ?> * jamaahCount;
-                            $('#total_bayar').val(totalHarga);
-                            $('#total_harga_display').val('Rp ' + formatRupiah(totalHarga));
-
-                            // Update uang muka minimal (30%)
-                            const minimalDP = totalHarga * 0.3;
-                            $('#uang_muka').attr('min', minimalDP).val(minimalDP);
-                            $('#uang_muka').next('p').text('Minimal Rp ' + formatRupiah(minimalDP));
-
-                            // Update sisa bayar
-                            const sisaBayar = totalHarga - minimalDP;
-                            $('#sisa_bayar').val('Rp ' + formatRupiah(sisaBayar));
+                        }).then(() => {
+                            // Tambahkan jamaah ke daftar
+                            addJamaahToList(response.jamaah);
 
                             // Reset form
                             $('#formTambahJamaah')[0].reset();
 
                             // Tutup modal
-                            $('#modalTambahJamaah').addClass('hidden');
+                            $('#modalTambahJamaah').removeClass('flex').addClass('hidden');
                         });
                     } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            text: response.message,
-                            confirmButtonColor: '#4F46E5'
-                        });
+                        // Jika ada error dari server
+                        if (response.errors) {
+                            // Tampilkan pesan error pada masing-masing field
+                            for (const [field, message] of Object.entries(response.errors)) {
+                                showInputError(field, message);
+                            }
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validasi Gagal',
+                                text: 'Mohon periksa kembali data yang diinput',
+                                confirmButtonColor: '#4F46E5'
+                            });
+                        } else {
+                            // Error umum
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal',
+                                text: response.message || 'Terjadi kesalahan pada server',
+                                confirmButtonColor: '#4F46E5'
+                            });
+                        }
                     }
                 },
-                error: function() {
+                error: function(xhr, status, error) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Gagal',
                         text: 'Terjadi kesalahan pada server',
                         confirmButtonColor: '#4F46E5'
                     });
+                    console.error(xhr.responseText);
                 }
             });
+        });
+
+        // Tambahkan class error pada input saat ada error
+        function showInputError(fieldId, errorMessage) {
+            $(`#${fieldId}`).addClass('border-red-500 focus:border-red-500 focus:ring-red-500');
+            $(`#error-${fieldId}`).text(errorMessage).removeClass('hidden');
+        }
+
+        // Hapus class error pada input saat tidak ada error
+        function hideInputError(fieldId) {
+            $(`#${fieldId}`).removeClass('border-red-500 focus:border-red-500 focus:ring-red-500');
+            $(`#error-${fieldId}`).addClass('hidden');
+        }
+
+        // Validasi real-time saat input berubah
+        $('#nik').on('input', function() {
+            const nik = $(this).val();
+            if (!nik) {
+                showInputError('nik', 'NIK harus diisi');
+            } else if (!/^\d+$/.test(nik)) {
+                showInputError('nik', 'NIK harus berupa angka');
+            } else if (nik.length !== 16) {
+                showInputError('nik', 'NIK harus 16 digit');
+            } else {
+                hideInputError('nik');
+            }
+        });
+
+        $('#nama').on('input', function() {
+            const nama = $(this).val();
+            if (!nama) {
+                showInputError('nama', 'Nama lengkap harus diisi');
+            } else {
+                hideInputError('nama');
+            }
+        });
+
+        $('#jenkel').on('change', function() {
+            const jenkel = $(this).val();
+            if (!jenkel) {
+                showInputError('jenkel', 'Jenis kelamin harus dipilih');
+            } else {
+                hideInputError('jenkel');
+            }
+        });
+
+        $('#nohp').on('input', function() {
+            const nohp = $(this).val();
+            if (!nohp) {
+                showInputError('nohp', 'Nomor HP harus diisi');
+            } else if (!/^\d+$/.test(nohp)) {
+                showInputError('nohp', 'Nomor HP harus berupa angka');
+            } else {
+                hideInputError('nohp');
+            }
+        });
+
+        $('#alamat').on('input', function() {
+            const alamat = $(this).val();
+            if (!alamat) {
+                showInputError('alamat', 'Alamat harus diisi');
+            } else {
+                hideInputError('alamat');
+            }
+        });
+
+        $('#email').on('input', function() {
+            const email = $(this).val();
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showInputError('email', 'Format email tidak valid');
+            } else {
+                hideInputError('email');
+            }
         });
 
         // Hapus jamaah dari list
@@ -608,5 +733,53 @@
             });
         });
     });
+
+    // Fungsi untuk menambahkan jamaah ke daftar
+    function addJamaahToList(jamaah) {
+        // Hitung jumlah jamaah saat ini
+        const jamaahCount = parseInt($('#jamaah_count').val()) + 1;
+
+        // Buat HTML untuk item jamaah baru
+        const jamaahHtml = `
+            <div class="jamaah-item border border-gray-200 rounded-lg p-3 mb-3">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="font-medium text-gray-700">Jamaah ${jamaahCount}</h4>
+                    <button type="button" class="btn-remove-jamaah text-red-600 hover:text-red-800" data-id="${jamaah.idjamaah}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <input type="hidden" name="jamaah_ids[]" value="${jamaah.idjamaah}">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" value="${jamaah.namajamaah}" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">NIK</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" value="${jamaah.nik}" readonly>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Tambahkan ke daftar jamaah
+        $('#jamaahList').append(jamaahHtml);
+        $('#jamaah_count').val(jamaahCount);
+
+        // Update total harga
+        const hargaPaket = <?= $paket['harga'] ?>;
+        const totalHarga = hargaPaket * jamaahCount;
+        $('#total_bayar').val(totalHarga);
+        $('#total_harga_display').val('Rp ' + formatRupiah(totalHarga));
+
+        // Update uang muka minimal (30%)
+        const minimalDP = Math.ceil(totalHarga * 0.3);
+        $('#uang_muka').attr('min', minimalDP).val(minimalDP);
+        $('#uang_muka').next('p').text('Minimal Rp ' + formatRupiah(minimalDP));
+
+        // Update sisa bayar
+        const sisaBayar = totalHarga - minimalDP;
+        $('#sisa_bayar').val('Rp ' + formatRupiah(sisaBayar));
+    }
 </script>
 <?= $this->endSection() ?>

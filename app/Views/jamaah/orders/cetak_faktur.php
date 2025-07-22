@@ -102,12 +102,17 @@
         }
 
         .status-confirmed {
-            color: #047857;
+            color: #22c55e;
             font-weight: bold;
         }
 
         .status-pending {
-            color: #b45309;
+            color: #eab308;
+            font-weight: bold;
+        }
+
+        .status-rejected {
+            color: #ef4444;
             font-weight: bold;
         }
     </style>
@@ -244,8 +249,10 @@
                     <td>Rp <?= number_format($pembayaran['jumlahbayar'], 0, ',', '.') ?></td>
                     <td><?= date('d F Y', strtotime($pembayaran['tanggalbayar'])) ?></td>
                     <td>
-                        <?php if ($pembayaran['statuspembayaran']): ?>
+                        <?php if ($pembayaran['statuspembayaran'] == 1): ?>
                             <span class="status-confirmed">Dikonfirmasi</span>
+                        <?php elseif ($pembayaran['statuspembayaran'] == 2): ?>
+                            <span class="status-rejected">Ditolak</span>
                         <?php else: ?>
                             <span class="status-pending">Menunggu Konfirmasi</span>
                         <?php endif; ?>
