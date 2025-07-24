@@ -29,6 +29,8 @@
 
     <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <!-- Glightbox -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css">
 
     <!-- Custom styles -->
     <?= $this->renderSection('styles') ?>
@@ -121,6 +123,19 @@
                     scrollTop: 0
                 }, 600);
                 return false;
+            });
+        });
+    </script>
+
+    <!-- SweetAlert2 CDN (sudah ada di atas) -->
+    <!-- Glightbox CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
+    <script>
+        // Inisialisasi Glightbox setelah dokumen siap
+        $(document).ready(function() {
+            const lightbox = GLightbox({
+                selector: '.glightbox'
             });
         });
     </script>

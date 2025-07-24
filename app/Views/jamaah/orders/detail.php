@@ -49,6 +49,39 @@
         </div>
     </div>
 
+    <!-- Informasi Cicilan -->
+    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <h3 class="text-md font-semibold mb-3 text-blue-800">Informasi Cicilan</h3>
+        <?php
+        // Hitung jumlah cicilan yang sudah dilakukan
+        $jumlahCicilan = 0;
+        foreach ($pembayaran as $p) {
+            if (strpos($p['tipepembayaran'], 'Cicilan') !== false || $p['tipepembayaran'] === 'DP') {
+                $jumlahCicilan++;
+            }
+        }
+        $sisaCicilan = 4 - $jumlahCicilan;
+        ?>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <p class="text-sm text-blue-700 mb-1">Jumlah Cicilan Maksimal</p>
+                <p class="text-sm font-medium text-blue-800">4 kali</p>
+            </div>
+            <div>
+                <p class="text-sm text-blue-700 mb-1">Minimal Pembayaran per Cicilan</p>
+                <p class="text-sm font-medium text-blue-800">Rp 500.000</p>
+            </div>
+            <div>
+                <p class="text-sm text-blue-700 mb-1">Cicilan yang Sudah Dilakukan</p>
+                <p class="text-sm font-medium text-blue-800"><?= $jumlahCicilan ?> kali</p>
+            </div>
+            <div>
+                <p class="text-sm text-blue-700 mb-1">Sisa Cicilan yang Tersedia</p>
+                <p class="text-sm font-medium text-blue-800"><?= $sisaCicilan ?> kali</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Informasi Paket -->
     <div class="mb-6">
         <h3 class="text-md font-semibold mb-3">Informasi Paket</h3>
@@ -131,10 +164,8 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $bayar['metodepembayaran'] ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $bayar['tipepembayaran'] ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <?php if ($bayar['statuspembayaran'] == 1): ?>
+                                <?php if ($bayar['statuspembayaran']): ?>
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Dikonfirmasi</span>
-                                <?php elseif ($bayar['statuspembayaran'] == 2): ?>
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Ditolak</span>
                                 <?php else: ?>
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Menunggu Konfirmasi</span>
                                 <?php endif; ?>

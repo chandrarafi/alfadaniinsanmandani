@@ -763,4 +763,161 @@ class Admin extends BaseController
             'redirect' => base_url('admin/pendaftaran/detail/' . $pendaftaranId)
         ]);
     }
+
+    /**
+     * Melihat faktur pembayaran
+     */
+    public function fakturPembayaran($idpembayaran = null)
+    {
+        // Cek apakah user adalah admin
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'admin') {
+            return redirect()->to(base_url('auth'));
+        }
+
+        if (!$idpembayaran) {
+            return redirect()->to(base_url('admin/pembayaran'))->with('error', 'ID Pembayaran tidak valid');
+        }
+
+        // Ambil detail pembayaran
+        $pembayaran = $this->pembayaranModel->getPembayaranDetail($idpembayaran);
+
+        if (!$pembayaran) {
+            return redirect()->to(base_url('admin/pembayaran'))->with('error', 'Data pembayaran tidak ditemukan');
+        }
+
+        // Ambil detail pendaftaran
+        $pendaftaran = $this->pendaftaranModel->getPendaftaranDetail($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah yang terdaftar
+        $jamaahList = $this->detailPendaftaranModel->getJamaahByIdPendaftaran($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah utama (yang login)
+        $jamaahModel = new \App\Models\JamaahModel();
+        $jamaahUtama = $jamaahModel->where('userid', $pendaftaran['iduser'])->first();
+
+        // Data perusahaan/travel (hardcoded)
+        $companyInfo = [
+            'nama' => 'Alfadani Insan Mandani',
+            'alamat' => 'Padang, Indonesia',
+            'telepon' => '021-1234567',
+            'email' => 'info@alfadani.com',
+            'website' => 'www.alfadani.com'
+        ];
+
+        $data = [
+            'title' => 'Faktur Pembayaran',
+            'pembayaran' => $pembayaran,
+            'pendaftaran' => $pendaftaran,
+            'jamaahList' => $jamaahList,
+            'jamaahUtama' => $jamaahUtama,
+            'companyInfo' => $companyInfo
+        ];
+
+        return view('admin/pembayaran/faktur', $data);
+    }
+
+    /**
+     * Cetak faktur pembayaran dengan DOMPDF
+     */
+    public function cetakFaktur($idpembayaran = null)
+    {
+        // Cek apakah user adalah admin
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'admin') {
+            return redirect()->to(base_url('auth'));
+        }
+
+        if (!$idpembayaran) {
+            return redirect()->to(base_url('admin/pembayaran'))->with('error', 'ID Pembayaran tidak valid');
+        }
+
+        // Ambil detail pembayaran
+        $pembayaran = $this->pembayaranModel->getPembayaranDetail($idpembayaran);
+
+        if (!$pembayaran) {
+            return redirect()->to(base_url('admin/pembayaran'))->with('error', 'Data pembayaran tidak ditemukan');
+        }
+
+        // Ambil detail pendaftaran
+        $pendaftaran = $this->pendaftaranModel->getPendaftaranDetail($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah yang terdaftar
+        $jamaahList = $this->detailPendaftaranModel->getJamaahByIdPendaftaran($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah utama (yang login)
+        $jamaahModel = new \App\Models\JamaahModel();
+        $jamaahUtama = $jamaahModel->where('userid', $pendaftaran['iduser'])->first();
+
+        // Data perusahaan/travel (hardcoded)
+        $companyInfo = [
+            'nama' => 'Alfadani Insan Mandani',
+            'alamat' => 'Padang, Indonesia',
+            'telepon' => '021-1234567',
+            'email' => 'info@alfadani.com',
+            'website' => 'www.alfadani.com'
+        ];
+
+        $data = [
+            'title' => 'Faktur Pembayaran',
+            'pembayaran' => $pembayaran,
+            'pendaftaran' => $pendaftaran,
+            'jamaahList' => $jamaahList,
+            'jamaahUtama' => $jamaahUtama,
+            'companyInfo' => $companyInfo
+        ];
+
+        // Inisialisasi DOMPDF
+        $dompdf = new \Dompdf\Dompdf();
+        $options = new \Dompdf\Options();
+        $options->set('isRemoteEnabled', true);
+        $dompdf->setOptions($options);
+
+        // Render view ke HTML
+        $html = view('admin/pembayaran/cetak_faktur', $data);
+
+        // Load HTML ke DOMPDF
+        $dompdf->loadHtml($html);
+
+        // Set ukuran dan orientasi kertas
+        $dompdf->setPaper('A4', 'portrait');
+
+        // Render PDF
+        $dompdf->render();
+
+        // Output PDF ke browser
+        $dompdf->stream('faktur-' . $idpembayaran . '.pdf', ['Attachment' => false]);
+        exit();
+    }
+
+    /**
+     * Cetak faktur pendaftaran (memanggil faktur pembayaran terakhir)
+     */
+    public function cetakFakturPendaftaran($idpendaftaran = null)
+    {
+        // Cek apakah user adalah admin
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'admin') {
+            return redirect()->to(base_url('auth'));
+        }
+
+        if (!$idpendaftaran) {
+            return redirect()->to(base_url('admin/pendaftaran'))->with('error', 'ID Pendaftaran tidak valid');
+        }
+
+        // Ambil pembayaran terakhir dari pendaftaran ini
+        $pembayaran = $this->pembayaranModel->getPembayaranByPendaftaranId($idpendaftaran);
+
+        if (empty($pembayaran)) {
+            return redirect()->to(base_url('admin/pendaftaran/detail/' . $idpendaftaran))->with('error', 'Belum ada pembayaran untuk pendaftaran ini');
+        }
+
+        // Urutkan pembayaran berdasarkan tanggal terbaru
+        usort($pembayaran, function ($a, $b) {
+            return strtotime($b['tanggalbayar']) - strtotime($a['tanggalbayar']);
+        });
+
+        // Ambil pembayaran terakhir
+        $lastPayment = $pembayaran[0];
+
+        // Redirect ke halaman cetak faktur pembayaran
+        return redirect()->to(base_url('admin/faktur/' . $lastPayment['idpembayaran']));
+    }
 }

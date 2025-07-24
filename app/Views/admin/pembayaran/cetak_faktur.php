@@ -144,8 +144,10 @@
                 <p>No. Faktur: <?= $pembayaran['idpembayaran'] ?></p>
                 <p>Tanggal: <?= date('d F Y', strtotime($pembayaran['tanggalbayar'])) ?></p>
                 <p>Status:
-                    <?php if ($pembayaran['statuspembayaran']): ?>
+                    <?php if ($pembayaran['statuspembayaran'] == 1): ?>
                         <span class="status-confirmed">LUNAS</span>
+                    <?php elseif ($pembayaran['statuspembayaran'] == 2): ?>
+                        <span class="status-rejected">DITOLAK</span>
                     <?php else: ?>
                         <span class="status-pending">MENUNGGU KONFIRMASI</span>
                     <?php endif; ?>
@@ -159,13 +161,13 @@
         <table>
             <tr>
                 <td width="25%"><strong>Nama</strong></td>
-                <td width="25%"><?= $jamaahUtama['nama'] ?? $pendaftaran['nama'] ?></td>
+                <td width="25%"><?= $jamaahUtama['namajamaah'] ?? $pendaftaran['nama'] ?></td>
                 <td width="25%"><strong>Tanggal Daftar</strong></td>
                 <td width="25%"><?= date('d F Y', strtotime($pendaftaran['tanggaldaftar'])) ?></td>
             </tr>
             <tr>
                 <td><strong>Email</strong></td>
-                <td><?= $jamaahUtama['email'] ?? $pendaftaran['email'] ?? '-' ?></td>
+                <td><?= $jamaahUtama['emailjamaah'] ?? $pendaftaran['email'] ?? '-' ?></td>
                 <td><strong>Waktu Berangkat</strong></td>
                 <td><?= date('d F Y', strtotime($pendaftaran['waktuberangkat'])) ?></td>
             </tr>

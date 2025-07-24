@@ -223,12 +223,32 @@
                                     $rekomendasiDP = $pendaftaran['totalbayar'] * 0.3;
                                     // Jika sisa bayar kurang dari DP yang direkomendasikan, gunakan sisa bayar
                                     $jumlahBayarDefault = min($rekomendasiDP, $pendaftaran['sisabayar']);
+                                    // Pastikan minimal pembayaran adalah 500.000
+                                    $jumlahBayarDefault = max(500000, $jumlahBayarDefault);
+
+                                    // Hitung jumlah cicilan yang sudah dilakukan
+                                    $jumlahCicilan = 0;
+                                    foreach ($pembayaran as $p) {
+                                        if (strpos($p['tipepembayaran'], 'Cicilan') !== false || $p['tipepembayaran'] === 'DP') {
+                                            $jumlahCicilan++;
+                                        }
+                                    }
+                                    $sisaCicilan = 4 - $jumlahCicilan;
                                     ?>
                                     <input type="text" id="jumlah_bayar" name="jumlah_bayar" class="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" value="<?= number_format($jumlahBayarDefault, 0, ',', '.') ?>" required>
                                     <input type="hidden" id="jumlah_bayar_raw" name="jumlah_bayar_raw" value="<?= $jumlahBayarDefault ?>">
                                 </div>
                                 <p class="mt-1 text-sm text-gray-500">Rekomendasi DP minimal 30%: Rp <?= number_format($rekomendasiDP, 0, ',', '.') ?></p>
                                 <p class="mt-1 text-sm text-gray-500">Maksimal pembayaran: Rp <?= number_format($pendaftaran['sisabayar'], 0, ',', '.') ?></p>
+                                <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <h4 class="font-medium text-blue-800 mb-2">Informasi Cicilan</h4>
+                                    <ul class="list-disc pl-5 text-sm text-blue-700 space-y-1">
+                                        <li>Minimal pembayaran cicilan: Rp 500.000</li>
+                                        <li>Maksimal 4 kali cicilan</li>
+                                        <li>Cicilan yang sudah dilakukan: <?= $jumlahCicilan ?> kali</li>
+                                        <li>Sisa cicilan yang tersedia: <?= $sisaCicilan ?> kali</li>
+                                    </ul>
+                                </div>
                             </div>
 
                             <div>
@@ -501,6 +521,12 @@
                 value = maxValue.toString();
             }
 
+            // Batasi nilai minimum 500.000
+            const minValue = 500000;
+            if (parseInt(value) < minValue && value.length >= 6) {
+                value = minValue.toString();
+            }
+
             // Update nilai raw untuk dikirim ke server
             $('#jumlah_bayar_raw').val(value);
 
@@ -508,31 +534,21 @@
             $(this).val(new Intl.NumberFormat('id-ID').format(value));
         });
 
-        // Preview gambar sebelum upload
-        $('#bukti_bayar').change(function() {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                const fileName = file.name;
-                const fileSize = Math.round(file.size / 1024); // Convert to KB
-
-                $('#selected-file').text(fileName + ' (' + fileSize + ' KB)');
-
-                reader.onload = function(e) {
-                    $('#preview').attr('src', e.target.result);
-                    $('#image-preview').removeClass('hidden');
-                }
-
-                reader.readAsDataURL(file);
-            } else {
-                $('#selected-file').text('Format: JPG, JPEG, PNG (Maks. 2MB)');
-                $('#image-preview').addClass('hidden');
-            }
-        });
-
-        // Submit form pembayaran
+        // Validasi form sebelum submit
         $('#formPembayaran').submit(function(e) {
             e.preventDefault();
+
+            // Validasi jumlah bayar
+            const jumlahBayar = parseInt($('#jumlah_bayar_raw').val());
+            if (jumlahBayar < 500000) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validasi Gagal',
+                    text: 'Jumlah pembayaran minimal Rp 500.000',
+                    confirmButtonColor: '#4F46E5'
+                });
+                return false;
+            }
 
             // Buat FormData untuk upload file
             const formData = new FormData(this);
@@ -600,6 +616,28 @@
                     });
                 }
             });
+        });
+
+        // Preview gambar sebelum upload
+        $('#bukti_bayar').change(function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                const fileName = file.name;
+                const fileSize = Math.round(file.size / 1024); // Convert to KB
+
+                $('#selected-file').text(fileName + ' (' + fileSize + ' KB)');
+
+                reader.onload = function(e) {
+                    $('#preview').attr('src', e.target.result);
+                    $('#image-preview').removeClass('hidden');
+                }
+
+                reader.readAsDataURL(file);
+            } else {
+                $('#selected-file').text('Format: JPG, JPEG, PNG (Maks. 2MB)');
+                $('#image-preview').addClass('hidden');
+            }
         });
     });
 </script>

@@ -128,9 +128,12 @@
                             return `
                                 <button class="btn btn-sm btn-success btn-konfirmasi" data-id="${row.idpembayaran}">Konfirmasi</button>
                                 <button class="btn btn-sm btn-danger btn-tolak" data-id="${row.idpembayaran}">Tolak</button>
+                                <a href="<?= base_url('admin/faktur/') ?>${row.idpembayaran}" class="btn btn-sm btn-primary">Faktur</a>
                             `;
                         } else {
-                            return '<span class="text-muted">Tidak ada aksi</span>';
+                            return `
+                                <a href="<?= base_url('admin/faktur/') ?>${row.idpembayaran}" class="btn btn-sm btn-primary">Faktur</a>
+                            `;
                         }
                     }
                 }

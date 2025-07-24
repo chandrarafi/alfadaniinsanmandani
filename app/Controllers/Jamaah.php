@@ -666,6 +666,39 @@ class Jamaah extends BaseController
             return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
         }
 
+        $pendaftaranId = $this->request->getPost('pendaftaran_id');
+        $jumlahBayar = $this->request->getPost('jumlah_bayar_raw'); // Menggunakan nilai raw
+
+        // Ambil data pendaftaran
+        $pendaftaran = $this->pendaftaranModel->find($pendaftaranId);
+        if (!$pendaftaran) {
+            return $this->response->setJSON(['status' => false, 'message' => 'Data pendaftaran tidak ditemukan']);
+        }
+
+        // Hitung jumlah cicilan yang sudah dilakukan
+        $pembayaranSebelumnya = $this->pembayaranModel->where('pendaftaranid', $pendaftaranId)->findAll();
+        $jumlahCicilan = count($pembayaranSebelumnya);
+
+        // Validasi jumlah cicilan maksimal 4 kali
+        if (!empty($pembayaranSebelumnya) && $jumlahCicilan >= 4) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => [
+                    'jumlah_bayar_raw' => 'Jumlah cicilan maksimal 4 kali. Silakan lunasi pembayaran Anda.'
+                ]
+            ]);
+        }
+
+        // Validasi jumlah pembayaran minimal Rp 500.000
+        if ($jumlahBayar < 500000) {
+            return $this->response->setJSON([
+                'status' => false,
+                'errors' => [
+                    'jumlah_bayar_raw' => 'Jumlah pembayaran minimal Rp 500.000'
+                ]
+            ]);
+        }
+
         $rules = [
             'pendaftaran_id' => 'required',
             'metode_pembayaran' => 'required',
@@ -680,7 +713,7 @@ class Jamaah extends BaseController
             'metode_pembayaran' => [
                 'required' => 'Metode pembayaran harus dipilih'
             ],
-            'jumlah_bayar' => [
+            'jumlah_bayar_raw' => [
                 'required' => 'Jumlah bayar harus diisi',
                 'numeric' => 'Jumlah bayar harus berupa angka'
             ],
@@ -698,9 +731,7 @@ class Jamaah extends BaseController
             ]);
         }
 
-        $pendaftaranId = $this->request->getPost('pendaftaran_id');
         $metodePembayaran = $this->request->getPost('metode_pembayaran');
-        $jumlahBayar = $this->request->getPost('jumlah_bayar_raw'); // Menggunakan nilai raw
 
         // Upload bukti pembayaran
         $bukti = $this->request->getFile('bukti_bayar');
@@ -710,9 +741,8 @@ class Jamaah extends BaseController
         // Buat ID pembayaran baru
         $idPembayaran = $this->pembayaranModel->getNewId();
 
-        // Cek apakah ini pembayaran pertama untuk pendaftaran ini
-        $pembayaranSebelumnya = $this->pembayaranModel->where('pendaftaranid', $pendaftaranId)->findAll();
-        $tipePembayaran = empty($pembayaranSebelumnya) ? 'DP' : 'Cicilan';
+        // Tentukan tipe pembayaran
+        $tipePembayaran = empty($pembayaranSebelumnya) ? 'DP' : 'Cicilan ke-' . $jumlahCicilan;
 
         // Simpan data pembayaran
         $dataPembayaran = [
@@ -730,9 +760,6 @@ class Jamaah extends BaseController
 
         // PENTING: Tidak mengubah sisa bayar di sini
         // Sisa bayar akan diupdate oleh admin saat konfirmasi pembayaran
-
-        // Ambil data pendaftaran untuk dikirim ke WebSocket
-        $pendaftaran = $this->pendaftaranModel->find($pendaftaranId);
 
         // Kirim data ke WebSocket untuk pembaruan realtime
         $this->sendToWebSocket([
