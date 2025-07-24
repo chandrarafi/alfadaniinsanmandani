@@ -128,7 +128,7 @@
 
         <!-- Detail Pembayaran -->
         <div class="mb-6">
-            <h3 class="text-lg font-semibold mb-2">Detail Pembayaran</h3>
+            <h3 class="text-lg font-semibold mb-2">Detail Pembayaran Saat Ini</h3>
             <div class="overflow-x-auto">
                 <table class="min-w-full bg-white">
                     <thead class="bg-gray-100">
@@ -159,6 +159,52 @@
             </div>
         </div>
 
+        <!-- Riwayat Pembayaran -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-2">Riwayat Semua Pembayaran</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="py-2 px-4 border-b text-left">No</th>
+                            <th class="py-2 px-4 border-b text-left">ID Pembayaran</th>
+                            <th class="py-2 px-4 border-b text-left">Tipe</th>
+                            <th class="py-2 px-4 border-b text-left">Jumlah</th>
+                            <th class="py-2 px-4 border-b text-left">Tanggal</th>
+                            <th class="py-2 px-4 border-b text-left">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($allPembayaran)): ?>
+                            <tr>
+                                <td colspan="6" class="py-4 text-center text-gray-500">Belum ada riwayat pembayaran</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php $no = 1;
+                            foreach ($allPembayaran as $bayar): ?>
+                                <tr class="<?= ($bayar['idpembayaran'] == $pembayaran['idpembayaran']) ? 'bg-blue-50' : '' ?>">
+                                    <td class="py-2 px-4 border-b"><?= $no++ ?></td>
+                                    <td class="py-2 px-4 border-b"><?= $bayar['idpembayaran'] ?></td>
+                                    <td class="py-2 px-4 border-b"><?= $bayar['tipepembayaran'] ?></td>
+                                    <td class="py-2 px-4 border-b">Rp <?= number_format($bayar['jumlahbayar'], 0, ',', '.') ?></td>
+                                    <td class="py-2 px-4 border-b"><?= date('d F Y', strtotime($bayar['tanggalbayar'])) ?></td>
+                                    <td class="py-2 px-4 border-b">
+                                        <?php if ($bayar['statuspembayaran'] == 1): ?>
+                                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Dikonfirmasi</span>
+                                        <?php elseif ($bayar['statuspembayaran'] == 2): ?>
+                                            <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-sm">Ditolak</span>
+                                        <?php else: ?>
+                                            <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">Menunggu</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Ringkasan Pembayaran -->
         <div class="mb-6">
             <h3 class="text-lg font-semibold mb-2">Ringkasan Pembayaran</h3>
@@ -166,6 +212,10 @@
                 <div class="flex justify-between mb-2">
                     <span>Total Biaya Paket:</span>
                     <span>Rp <?= number_format($pendaftaran['totalbayar'], 0, ',', '.') ?></span>
+                </div>
+                <div class="flex justify-between mb-2">
+                    <span>Total Pembayaran Terkonfirmasi:</span>
+                    <span>Rp <?= number_format($totalBayarKonfirmasi, 0, ',', '.') ?></span>
                 </div>
                 <div class="flex justify-between mb-2">
                     <span>Pembayaran Saat Ini:</span>

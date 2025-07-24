@@ -299,9 +299,18 @@
                         if (data.referensi.length > 0) {
                             let html = '';
 
+                            // Dapatkan ID jamaah yang sudah dipilih
+                            const selectedJamaahIds = [];
+                            $('input[name="jamaah_ids[]"]').each(function() {
+                                selectedJamaahIds.push($(this).val());
+                            });
+
                             $.each(data.referensi, function(index, jamaah) {
+                                // Cek apakah jamaah sudah dipilih
+                                const isSelected = selectedJamaahIds.includes(jamaah.idjamaah);
+
                                 html += `
-                                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors ${isSelected ? 'bg-gray-100' : ''}">
                                         <div class="flex justify-between items-start">
                                             <div>
                                                 <h4 class="font-medium text-gray-800">${jamaah.namajamaah}</h4>
@@ -325,9 +334,14 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <button type="button" class="btn-pilih-referensi px-4 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors" data-id="${jamaah.idjamaah}" data-nama="${jamaah.namajamaah}" data-nik="${jamaah.nik}">
-                                                Pilih
-                                            </button>
+                                            ${isSelected ? 
+                                                `<button type="button" class="px-4 py-2 bg-gray-300 text-gray-500 text-sm rounded-lg cursor-not-allowed" disabled>
+                                                    Sudah Dipilih
+                                                </button>` : 
+                                                `<button type="button" class="btn-pilih-referensi px-4 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors" data-id="${jamaah.idjamaah}" data-nama="${jamaah.namajamaah}" data-nik="${jamaah.nik}">
+                                                    Pilih
+                                                </button>`
+                                            }
                                         </div>
                                     </div>
                                 `;
@@ -400,6 +414,11 @@
             // Update sisa bayar
             const sisaBayar = totalHarga - minimalDP;
             $('#sisa_bayar').val('Rp ' + formatRupiah(sisaBayar));
+
+            // Refresh daftar jamaah referensi untuk memperbarui status dipilih
+            if ($('#tab-jamaah-referensi').hasClass('tab-active')) {
+                loadJamaahReferensi();
+            }
 
             // Tutup modal
             $('#modalTambahJamaah').addClass('hidden');
@@ -522,6 +541,11 @@
 
                             // Tutup modal
                             $('#modalTambahJamaah').removeClass('flex').addClass('hidden');
+
+                            // Refresh daftar jamaah referensi jika tab aktif
+                            if ($('#tab-jamaah-referensi').hasClass('tab-active')) {
+                                loadJamaahReferensi();
+                            }
                         });
                     } else {
                         // Jika ada error dari server
@@ -668,6 +692,11 @@
                     // Update sisa bayar
                     const sisaBayar = totalHarga - minimalDP;
                     $('#sisa_bayar').val('Rp ' + formatRupiah(sisaBayar));
+
+                    // Refresh daftar jamaah referensi jika tab aktif
+                    if ($('#tab-jamaah-referensi').hasClass('tab-active')) {
+                        loadJamaahReferensi();
+                    }
                 }
             });
         });

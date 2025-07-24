@@ -1261,6 +1261,22 @@ class Jamaah extends BaseController
         // Ambil data jamaah utama (yang login)
         $jamaahUtama = $this->jamaahModel->where('userid', $userId)->first();
 
+        // Ambil semua pembayaran yang terkait dengan pendaftaran ini
+        $allPembayaran = $this->pembayaranModel->getPembayaranByPendaftaranId($pembayaran['pendaftaranid']);
+
+        // Urutkan pembayaran berdasarkan tanggal (terbaru di atas)
+        usort($allPembayaran, function ($a, $b) {
+            return strtotime($b['tanggalbayar']) - strtotime($a['tanggalbayar']);
+        });
+
+        // Hitung total pembayaran yang sudah dikonfirmasi
+        $totalBayarKonfirmasi = 0;
+        foreach ($allPembayaran as $bayar) {
+            if ($bayar['statuspembayaran'] == 1) {
+                $totalBayarKonfirmasi += $bayar['jumlahbayar'];
+            }
+        }
+
         // Data perusahaan/travel (hardcoded)
         $companyInfo = [
             'nama' => 'Alfadani Insan Mandani',
@@ -1276,7 +1292,9 @@ class Jamaah extends BaseController
             'pendaftaran' => $pendaftaranDetail,
             'jamaahList' => $jamaahList,
             'jamaahUtama' => $jamaahUtama,
-            'companyInfo' => $companyInfo
+            'companyInfo' => $companyInfo,
+            'allPembayaran' => $allPembayaran,
+            'totalBayarKonfirmasi' => $totalBayarKonfirmasi
         ];
 
         return view('jamaah/orders/faktur', $data);
@@ -1322,6 +1340,22 @@ class Jamaah extends BaseController
         // Ambil data jamaah utama (yang login)
         $jamaahUtama = $this->jamaahModel->where('userid', $userId)->first();
 
+        // Ambil semua pembayaran yang terkait dengan pendaftaran ini
+        $allPembayaran = $this->pembayaranModel->getPembayaranByPendaftaranId($pembayaran['pendaftaranid']);
+
+        // Urutkan pembayaran berdasarkan tanggal (terbaru di atas)
+        usort($allPembayaran, function ($a, $b) {
+            return strtotime($b['tanggalbayar']) - strtotime($a['tanggalbayar']);
+        });
+
+        // Hitung total pembayaran yang sudah dikonfirmasi
+        $totalBayarKonfirmasi = 0;
+        foreach ($allPembayaran as $bayar) {
+            if ($bayar['statuspembayaran'] == 1) {
+                $totalBayarKonfirmasi += $bayar['jumlahbayar'];
+            }
+        }
+
         // Data perusahaan/travel (hardcoded)
         $companyInfo = [
             'nama' => 'Alfadani Insan Mandani',
@@ -1337,7 +1371,9 @@ class Jamaah extends BaseController
             'pendaftaran' => $pendaftaranDetail,
             'jamaahList' => $jamaahList,
             'jamaahUtama' => $jamaahUtama,
-            'companyInfo' => $companyInfo
+            'companyInfo' => $companyInfo,
+            'allPembayaran' => $allPembayaran,
+            'totalBayarKonfirmasi' => $totalBayarKonfirmasi
         ];
 
         // Inisialisasi DOMPDF

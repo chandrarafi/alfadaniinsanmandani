@@ -9,7 +9,7 @@
                 <a href="<?= base_url('admin/cetakFaktur/' . $pembayaran['idpembayaran']) ?>" target="_blank" class="btn btn-primary">
                     <i class="bx bx-printer me-1"></i> Cetak PDF
                 </a>
-                <a href="<?= base_url('admin/pembayaran') ?>" class="btn btn-secondary ms-2">
+                <a href="javascript:history.back()" class="btn btn-secondary ms-2">
                     <i class="bx bx-arrow-back me-1"></i> Kembali
                 </a>
             </div>
