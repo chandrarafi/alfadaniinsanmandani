@@ -343,16 +343,24 @@
                                             <td><?= $bayar['tipepembayaran'] ?></td>
                                             <td class="text-end">Rp <?= number_format($bayar['jumlahbayar'], 0, ',', '.') ?></td>
                                             <td class="text-center">
-                                                <a href="<?= base_url('uploads/pembayaran/' . $bayar['buktibayar']) ?>" class="btn btn-sm btn-info glightbox" data-gallery="pembayaran-gallery" data-glightbox="title: Bukti Pembayaran <?= $bayar['idpembayaran'] ?>">
-                                                    <i class="bx bx-image"></i> Lihat Bukti
-                                                </a>
+                                                <?php if ($bayar['metodepembayaran'] === 'Cash'): ?>
+                                                    <span class="text-muted">-</span>
+                                                <?php else: ?>
+                                                    <a href="<?= base_url('uploads/pembayaran/' . $bayar['buktibayar']) ?>" class="btn btn-sm btn-info glightbox" data-gallery="pembayaran-gallery" data-glightbox="title: Bukti Pembayaran <?= $bayar['idpembayaran'] ?>">
+                                                        <i class="bx bx-image"></i> Lihat Bukti
+                                                    </a>
+                                                <?php endif; ?>
                                             </td>
                                             <td class="text-center">
-                                                <?php if ($bayar['statuspembayaran']): ?>
-                                                    <span class="badge bg-success rounded-pill">Dikonfirmasi</span>
-                                                <?php else: ?>
-                                                    <span class="badge bg-warning rounded-pill">Menunggu Konfirmasi</span>
-                                                <?php endif; ?>
+                                                <?php
+                                                if ($bayar['statuspembayaran'] == 0) {
+                                                    echo '<span class="badge bg-warning rounded-pill">Menunggu Konfirmasi</span>';
+                                                } elseif ($bayar['statuspembayaran'] == 1) {
+                                                    echo '<span class="badge bg-success rounded-pill">Dikonfirmasi</span>';
+                                                } elseif ($bayar['statuspembayaran'] == 2) {
+                                                    echo '<span class="badge bg-danger rounded-pill">Ditolak</span>';
+                                                }
+                                                ?>
                                             </td>
                                             <td class="text-center">
                                                 <?php if (!$bayar['statuspembayaran']): ?>

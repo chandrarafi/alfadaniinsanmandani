@@ -273,6 +273,13 @@
             </tbody>
         </table>
 
+        <?php if ($pembayaran['metodepembayaran'] !== 'Cash' && !empty($pembayaran['buktibayar'])): ?>
+            <div style="margin-top: 5px; margin-bottom: 10px;">
+                <p style="font-weight: bold; font-size: 10px; margin-bottom: 3px;">Bukti Pembayaran:</p>
+                <img src="<?= base_url('uploads/pembayaran/' . $pembayaran['buktibayar']) ?>" alt="Bukti Pembayaran" style="max-height: 100px; display: block; margin: 0 auto; border: 1px solid #ddd;">
+            </div>
+        <?php endif; ?>
+
         <!-- Ringkasan Pembayaran -->
         <h3>Ringkasan Pembayaran</h3>
         <div class="summary">

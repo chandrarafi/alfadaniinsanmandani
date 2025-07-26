@@ -147,8 +147,10 @@
                             <td class="py-2 px-4 border-b">Rp <?= number_format($pembayaran['jumlahbayar'], 0, ',', '.') ?></td>
                             <td class="py-2 px-4 border-b"><?= date('d F Y', strtotime($pembayaran['tanggalbayar'])) ?></td>
                             <td class="py-2 px-4 border-b">
-                                <?php if ($pembayaran['statuspembayaran']): ?>
+                                <?php if ($pembayaran['statuspembayaran'] == 1): ?>
                                     <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Dikonfirmasi</span>
+                                <?php elseif ($pembayaran['statuspembayaran'] == 2): ?>
+                                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-sm">Ditolak</span>
                                 <?php else: ?>
                                     <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">Menunggu Konfirmasi</span>
                                 <?php endif; ?>
@@ -157,6 +159,15 @@
                     </tbody>
                 </table>
             </div>
+
+            <?php if ($pembayaran['metodepembayaran'] !== 'Cash' && !empty($pembayaran['buktibayar'])): ?>
+                <div class="mt-4">
+                    <h4 class="text-md font-semibold mb-2">Bukti Pembayaran</h4>
+                    <div class="text-center">
+                        <img src="<?= base_url('uploads/pembayaran/' . $pembayaran['buktibayar']) ?>" alt="Bukti Pembayaran" class="max-h-60 inline-block border border-gray-300 rounded-lg shadow-sm">
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- Riwayat Pembayaran -->

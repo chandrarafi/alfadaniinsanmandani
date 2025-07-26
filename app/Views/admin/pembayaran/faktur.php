@@ -31,11 +31,11 @@
                     <p class="mb-1">Tanggal: <?= date('d F Y', strtotime($pembayaran['tanggalbayar'])) ?></p>
                     <p class="mb-1">Status:
                         <?php if ($pembayaran['statuspembayaran'] == 1): ?>
-                            <span class="badge bg-success">LUNAS</span>
+                            <span class="badge bg-success">Dikonfirmasi</span>
                         <?php elseif ($pembayaran['statuspembayaran'] == 2): ?>
-                            <span class="badge bg-danger">DITOLAK</span>
+                            <span class="badge bg-danger">Ditolak</span>
                         <?php else: ?>
-                            <span class="badge bg-warning">MENUNGGU KONFIRMASI</span>
+                            <span class="badge bg-warning">Menunggu Konfirmasi</span>
                         <?php endif; ?>
                     </p>
                 </div>
@@ -165,6 +165,17 @@
                     </tbody>
                 </table>
             </div>
+
+            <?php if ($pembayaran['metodepembayaran'] !== 'Cash' && !empty($pembayaran['buktibayar'])): ?>
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-3">Bukti Pembayaran</h5>
+                    <div class="text-center">
+                        <a href="<?= base_url('uploads/pembayaran/' . $pembayaran['buktibayar']) ?>" target="_blank" class="glightbox">
+                            <img src="<?= base_url('uploads/pembayaran/' . $pembayaran['buktibayar']) ?>" alt="Bukti Pembayaran" class="img-fluid border rounded" style="max-height: 300px;">
+                        </a>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <!-- Ringkasan Pembayaran -->
             <h5 class="fw-bold mb-3">Ringkasan Pembayaran</h5>

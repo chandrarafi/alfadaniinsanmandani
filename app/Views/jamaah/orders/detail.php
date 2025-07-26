@@ -164,11 +164,15 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $bayar['metodepembayaran'] ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= $bayar['tipepembayaran'] ?></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <?php if ($bayar['statuspembayaran']): ?>
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Dikonfirmasi</span>
-                                <?php else: ?>
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Menunggu Konfirmasi</span>
-                                <?php endif; ?>
+                                <?php
+                                if ($bayar['statuspembayaran'] == 0) {
+                                    echo '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Menunggu Konfirmasi</span>';
+                                } elseif ($bayar['statuspembayaran'] == 1) {
+                                    echo '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Dikonfirmasi</span>';
+                                } elseif ($bayar['statuspembayaran'] == 2) {
+                                    echo '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Ditolak</span>';
+                                }
+                                ?>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <a href="<?= base_url('jamaah/faktur/' . $bayar['idpembayaran']) ?>" class="text-blue-600 hover:text-blue-900" target="_blank">

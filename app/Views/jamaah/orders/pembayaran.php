@@ -129,6 +129,7 @@
                                 <select id="metode_pembayaran" name="metode_pembayaran" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
                                     <option value="">Pilih Metode Pembayaran</option>
                                     <option value="Transfer Bank">Transfer Bank</option>
+                                    <option value="Cash">Cash (Bayar di Tempat)</option>
                                     <!-- <option value="QRIS">QRIS</option> -->
                                 </select>
                             </div>
@@ -153,6 +154,19 @@
                                     </div>
                                     <div class="mt-3 text-sm text-blue-700">
                                         <p>Silakan transfer sesuai nominal yang tertera dan upload bukti transfer.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Informasi Cash -->
+                            <div id="info-cash" class="hidden">
+                                <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                    <h4 class="font-medium text-green-800 mb-2">Informasi Pembayaran Cash</h4>
+                                    <div class="space-y-2">
+                                        <p class="text-sm text-green-700">
+                                            Pembayaran cash dilakukan langsung di kantor kami. Setelah mengisi form ini, silakan datang ke kantor kami.
+                                        </p>
+
                                     </div>
                                 </div>
                             </div>
@@ -226,10 +240,13 @@
                                     // Pastikan minimal pembayaran adalah 500.000
                                     $jumlahBayarDefault = max(500000, $jumlahBayarDefault);
 
-                                    // Hitung jumlah cicilan yang sudah dilakukan
+                                    // Hitung jumlah cicilan yang sudah dilakukan (tidak termasuk DP)
                                     $jumlahCicilan = 0;
+                                    $adaDP = false;
                                     foreach ($pembayaran as $p) {
-                                        if (strpos($p['tipepembayaran'], 'Cicilan') !== false || $p['tipepembayaran'] === 'DP') {
+                                        if ($p['tipepembayaran'] === 'DP') {
+                                            $adaDP = true;
+                                        } else if (strpos($p['tipepembayaran'], 'Cicilan') !== false) {
                                             $jumlahCicilan++;
                                         }
                                     }
@@ -244,14 +261,13 @@
                                     <h4 class="font-medium text-blue-800 mb-2">Informasi Cicilan</h4>
                                     <ul class="list-disc pl-5 text-sm text-blue-700 space-y-1">
                                         <li>Minimal pembayaran cicilan: Rp 500.000</li>
-                                        <li>Maksimal 4 kali cicilan</li>
-                                        <li>Cicilan yang sudah dilakukan: <?= $jumlahCicilan ?> kali</li>
-                                        <li>Sisa cicilan yang tersedia: <?= $sisaCicilan ?> kali</li>
+                                        <li>Maksimal 4 kali cicilan (tidak termasuk DP)</li>
+
                                     </ul>
                                 </div>
                             </div>
 
-                            <div>
+                            <div id="bukti_container">
                                 <label for="bukti_bayar" class="block text-sm font-medium text-gray-700 mb-1">Bukti Pembayaran</label>
                                 <div class="mt-1 flex flex-col items-center">
                                     <label for="bukti_bayar" class="w-full flex flex-col items-center px-4 py-6 bg-white text-primary-600 rounded-lg shadow-sm tracking-wide border border-primary-200 cursor-pointer hover:bg-primary-50 hover:border-primary-300 transition-all">
@@ -259,7 +275,7 @@
                                         <span class="mt-2 text-base font-medium">Pilih file</span>
                                         <span id="selected-file" class="mt-1 text-sm text-gray-500">Format: JPG, JPEG, PNG (Maks. 2MB)</span>
                                     </label>
-                                    <input type="file" id="bukti_bayar" name="bukti_bayar" class="hidden" accept="image/jpeg,image/png,image/jpg" required>
+                                    <input type="file" id="bukti_bayar" name="bukti_bayar" class="hidden" accept="image/jpeg,image/png,image/jpg">
                                     <div id="image-preview" class="mt-4 hidden w-full">
                                         <img id="preview" class="max-h-48 rounded-lg mx-auto border border-gray-200" src="#" alt="Preview Bukti Pembayaran">
                                     </div>
@@ -354,15 +370,60 @@
             const metode = $('#metode_pembayaran').val();
 
             // Sembunyikan semua info
-            $('#info-bank, #info-qris').addClass('hidden');
+            $('#info-bank, #info-cash, #info-qris').addClass('hidden');
 
             // Tampilkan info sesuai metode
             if (metode === 'Transfer Bank') {
                 $('#info-bank').removeClass('hidden');
+                $('#bukti_container').show();
+                $('#bukti_bayar').prop('required', true);
+
+                // Reset jumlah bayar ke default jika sebelumnya Cash
+                if ($('#previous_metode').val() === 'Cash') {
+                    const defaultValue = <?= $jumlahBayarDefault ?>;
+                    $('#jumlah_bayar_raw').val(defaultValue);
+                    $('#jumlah_bayar').val(new Intl.NumberFormat('id-ID').format(defaultValue));
+                    $('#jumlah_bayar').prop('readonly', false);
+                }
+            } else if (metode === 'Cash') {
+                $('#info-cash').removeClass('hidden');
+                $('#bukti_container').hide();
+                $('#bukti_bayar').prop('required', false);
+
+                // Pastikan jumlah bayar tidak readonly
+                $('#jumlah_bayar').prop('readonly', false);
+
+                // Jika sebelumnya belum memilih metode, set ke default value
+                if (!$('#previous_metode').val()) {
+                    const defaultValue = <?= $jumlahBayarDefault ?>;
+                    $('#jumlah_bayar_raw').val(defaultValue);
+                    $('#jumlah_bayar').val(new Intl.NumberFormat('id-ID').format(defaultValue));
+                }
             } else if (metode === 'QRIS') {
                 $('#info-qris').removeClass('hidden');
+                $('#bukti_container').show();
+                $('#bukti_bayar').prop('required', true);
+
+                // Reset jumlah bayar ke default jika sebelumnya Cash
+                if ($('#previous_metode').val() === 'Cash') {
+                    const defaultValue = <?= $jumlahBayarDefault ?>;
+                    $('#jumlah_bayar_raw').val(defaultValue);
+                    $('#jumlah_bayar').val(new Intl.NumberFormat('id-ID').format(defaultValue));
+                    $('#jumlah_bayar').prop('readonly', false);
+                }
             }
+
+            // Simpan metode yang dipilih untuk perbandingan berikutnya
+            $('#previous_metode').val(metode);
         }
+
+        // Tambahkan hidden field untuk menyimpan metode pembayaran sebelumnya
+        $('<input>').attr({
+            type: 'hidden',
+            id: 'previous_metode',
+            name: 'previous_metode',
+            value: ''
+        }).appendTo('#formPembayaran');
 
         // Jalankan saat halaman dimuat
         updatePaymentInfo();
@@ -521,12 +582,6 @@
                 value = maxValue.toString();
             }
 
-            // Batasi nilai minimum 500.000
-            const minValue = 500000;
-            if (parseInt(value) < minValue && value.length >= 6) {
-                value = minValue.toString();
-            }
-
             // Update nilai raw untuk dikirim ke server
             $('#jumlah_bayar_raw').val(value);
 
@@ -540,14 +595,28 @@
 
             // Validasi jumlah bayar
             const jumlahBayar = parseInt($('#jumlah_bayar_raw').val());
-            if (jumlahBayar < 500000) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Validasi Gagal',
-                    text: 'Jumlah pembayaran minimal Rp 500.000',
-                    confirmButtonColor: '#4F46E5'
-                });
-                return false;
+            const metodePembayaran = $('#metode_pembayaran').val();
+
+            if (metodePembayaran === 'Cash') {
+                if (jumlahBayar < 500000) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validasi Gagal',
+                        text: 'Jumlah pembayaran minimal Rp 500.000 untuk Cash',
+                        confirmButtonColor: '#4F46E5'
+                    });
+                    return false;
+                }
+            } else { // Transfer Bank atau QRIS
+                if (jumlahBayar < 500000) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validasi Gagal',
+                        text: 'Jumlah pembayaran minimal Rp 500.000 untuk Transfer Bank atau QRIS',
+                        confirmButtonColor: '#4F46E5'
+                    });
+                    return false;
+                }
             }
 
             // Buat FormData untuk upload file
