@@ -666,12 +666,19 @@ class Jamaah extends BaseController
             return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
         }
 
+        $metodePembayaran = $this->request->getPost('metode_pembayaran');
+        $isCash = ($metodePembayaran === 'Cash');
+
         $rules = [
             'pendaftaran_id' => 'required',
             'metode_pembayaran' => 'required',
-            'jumlah_bayar_raw' => 'required|numeric',
-            'bukti_bayar' => 'uploaded[bukti_bayar]|mime_in[bukti_bayar,image/jpg,image/jpeg,image/png]|max_size[bukti_bayar,2048]'
+            'jumlah_bayar_raw' => 'required|numeric'
         ];
+
+        // Tambahkan validasi bukti_bayar hanya jika bukan pembayaran Cash
+        if (!$isCash) {
+            $rules['bukti_bayar'] = 'uploaded[bukti_bayar]|mime_in[bukti_bayar,image/jpg,image/jpeg,image/png]|max_size[bukti_bayar,2048]';
+        }
 
         $messages = [
             'pendaftaran_id' => [
@@ -699,13 +706,7 @@ class Jamaah extends BaseController
         }
 
         $pendaftaranId = $this->request->getPost('pendaftaran_id');
-        $metodePembayaran = $this->request->getPost('metode_pembayaran');
         $jumlahBayar = $this->request->getPost('jumlah_bayar_raw'); // Menggunakan nilai raw
-
-        // Upload bukti pembayaran
-        $bukti = $this->request->getFile('bukti_bayar');
-        $namaFile = $bukti->getRandomName();
-        $bukti->move(ROOTPATH . 'public/uploads/pembayaran', $namaFile);
 
         // Buat ID pembayaran baru
         $idPembayaran = $this->pembayaranModel->getNewId();
@@ -713,6 +714,16 @@ class Jamaah extends BaseController
         // Cek apakah ini pembayaran pertama untuk pendaftaran ini
         $pembayaranSebelumnya = $this->pembayaranModel->where('pendaftaranid', $pendaftaranId)->findAll();
         $tipePembayaran = empty($pembayaranSebelumnya) ? 'DP' : 'Cicilan';
+
+        // Variabel untuk menyimpan nama file bukti pembayaran
+        $namaFile = null;
+
+        // Upload bukti pembayaran jika bukan pembayaran Cash
+        if (!$isCash) {
+            $bukti = $this->request->getFile('bukti_bayar');
+            $namaFile = $bukti->getRandomName();
+            $bukti->move(ROOTPATH . 'public/uploads/pembayaran', $namaFile);
+        }
 
         // Simpan data pembayaran
         $dataPembayaran = [
