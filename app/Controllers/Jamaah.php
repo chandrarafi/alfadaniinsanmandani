@@ -708,12 +708,49 @@ class Jamaah extends BaseController
         $pendaftaranId = $this->request->getPost('pendaftaran_id');
         $jumlahBayar = $this->request->getPost('jumlah_bayar_raw'); // Menggunakan nilai raw
 
+        // Ambil data pendaftaran untuk validasi
+        $pendaftaran = $this->pendaftaranModel->find($pendaftaranId);
+        if (!$pendaftaran) {
+            return $this->response->setJSON([
+                'status' => false,
+                'message' => 'Data pendaftaran tidak ditemukan'
+            ]);
+        }
+
+        // Cek apakah sudah ada DP yang dikonfirmasi
+        $pembayaranSebelumnya = $this->pembayaranModel->where('pendaftaranid', $pendaftaranId)->findAll();
+        $adaDP = false;
+        foreach ($pembayaranSebelumnya as $p) {
+            if ($p['statuspembayaran'] == 1 && $p['tipepembayaran'] === 'DP') {
+                $adaDP = true;
+                break;
+            }
+        }
+
+        // Tentukan tipe pembayaran
+        $tipePembayaran = $adaDP ? 'Cicilan' : 'DP';
+
+        // Validasi khusus untuk DP (minimal 30% dari total)
+        if ($tipePembayaran === 'DP') {
+            $minimalDP = $pendaftaran['totalbayar'] * 0.3;
+            if ($jumlahBayar < $minimalDP) {
+                return $this->response->setJSON([
+                    'status' => false,
+                    'message' => 'Pembayaran DP minimal 30% dari total paket (Rp ' . number_format($minimalDP, 0, ',', '.') . ')'
+                ]);
+            }
+        } else {
+            // Validasi untuk cicilan (minimal Rp 500.000)
+            if ($jumlahBayar < 500000) {
+                return $this->response->setJSON([
+                    'status' => false,
+                    'message' => 'Jumlah pembayaran cicilan minimal Rp 500.000'
+                ]);
+            }
+        }
+
         // Buat ID pembayaran baru
         $idPembayaran = $this->pembayaranModel->getNewId();
-
-        // Cek apakah ini pembayaran pertama untuk pendaftaran ini
-        $pembayaranSebelumnya = $this->pembayaranModel->where('pendaftaranid', $pendaftaranId)->findAll();
-        $tipePembayaran = empty($pembayaranSebelumnya) ? 'DP' : 'Cicilan';
 
         // Variabel untuk menyimpan nama file bukti pembayaran
         $namaFile = null;
@@ -741,9 +778,6 @@ class Jamaah extends BaseController
 
         // PENTING: Tidak mengubah sisa bayar di sini
         // Sisa bayar akan diupdate oleh admin saat konfirmasi pembayaran
-
-        // Ambil data pendaftaran untuk dikirim ke WebSocket
-        $pendaftaran = $this->pendaftaranModel->find($pendaftaranId);
 
         // Kirim data ke WebSocket untuk pembaruan realtime
         $this->sendToWebSocket([
