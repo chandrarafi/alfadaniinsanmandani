@@ -956,4 +956,42 @@ class Admin extends BaseController
         // Redirect ke halaman cetak faktur pembayaran
         return redirect()->to(base_url('admin/faktur/' . $lastPayment['idpembayaran']));
     }
+
+    /**
+     * Cetak surat jalan untuk pendaftaran Umroh/Haji
+     */
+    public function cetakSuratJalan($idpendaftaran = null)
+    {
+        // Cek apakah user adalah admin
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'admin') {
+            return redirect()->to(base_url('auth'));
+        }
+
+        if (!$idpendaftaran) {
+            return redirect()->to(base_url('admin/pendaftaran'))->with('error', 'ID Pendaftaran tidak valid');
+        }
+
+        // Ambil data pendaftaran dengan join ke tabel terkait
+        $pendaftaran = $this->pendaftaranModel->getPendaftaranDetail($idpendaftaran);
+
+        if (!$pendaftaran) {
+            return redirect()->to(base_url('admin/pendaftaran'))->with('error', 'Data pendaftaran tidak ditemukan');
+        }
+
+        // Ambil daftar jamaah
+        $jamaahList = $this->detailPendaftaranModel->getJamaahByIdPendaftaran($idpendaftaran);
+
+        // Ambil data pembayaran
+        $pembayaran = $this->pembayaranModel->getPembayaranByPendaftaranId($idpendaftaran);
+
+        $data = [
+            'title' => 'Surat Jalan - ' . ucfirst($pendaftaran['namakategori']),
+            'pendaftaran' => $pendaftaran,
+            'jamaahList' => $jamaahList,
+            'pembayaran' => $pembayaran
+        ];
+
+        // Return view untuk cetak surat jalan
+        return view('admin/laporan/cetak_surat_jalan', $data);
+    }
 }

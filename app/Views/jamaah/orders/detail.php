@@ -192,12 +192,18 @@
     </div>
 
     <!-- Tombol Aksi -->
-    <?php if ($pendaftaran['status'] === 'pending'): ?>
-        <div class="flex justify-end mt-4">
+    <div class="flex justify-end mt-4 space-x-2">
+        <?php if ($pendaftaran['status'] === 'pending'): ?>
             <a href="<?= base_url('jamaah/orders/pembayaran/' . $pendaftaran['idpendaftaran']) ?>" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm">
                 Lanjutkan Pembayaran
             </a>
-        </div>
-    <?php endif; ?>
+        <?php endif; ?>
+
+        <?php if (in_array($pendaftaran['status'], ['confirmed', 'completed']) || $pendaftaran['status'] == null): ?>
+            <button onclick="window.open('<?= base_url('jamaah/orders/cetak-surat-jalan/' . $pendaftaran['idpendaftaran']) ?>', '_blank')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm">
+                <i class="fas fa-file-alt mr-1"></i> Cetak Surat Jalan
+            </button>
+        <?php endif; ?>
+    </div>
 </div>
 <?= $this->endSection(); ?>

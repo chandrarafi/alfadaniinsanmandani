@@ -1626,4 +1626,54 @@ class Jamaah extends BaseController
             'jamaahReferensi' => $jamaahReferensi
         ]);
     }
+
+    /**
+     * Cetak surat jalan untuk jamaah
+     */
+    public function cetakSuratJalan($idpendaftaran = null)
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            return redirect()->to('auth');
+        }
+
+        if (!$idpendaftaran) {
+            return redirect()->to(base_url('jamaah/orders'))->with('error', 'ID Pendaftaran tidak valid');
+        }
+
+        $userId = $this->session->get('id');
+
+        // Ambil data pendaftaran dengan validasi kepemilikan
+        $pendaftaran = $this->pendaftaranModel->getPendaftaranDetail($idpendaftaran);
+
+        if (!$pendaftaran) {
+            return redirect()->to(base_url('jamaah/orders'))->with('error', 'Data pendaftaran tidak ditemukan');
+        }
+
+        // Pastikan pendaftaran ini milik user yang sedang login
+        if ($pendaftaran['iduser'] != $userId) {
+            return redirect()->to(base_url('jamaah/orders'))->with('error', 'Anda tidak memiliki akses ke pendaftaran ini');
+        }
+
+        // Pastikan status pendaftaran sudah dikonfirmasi atau selesai
+        if (!in_array($pendaftaran['status'], ['confirmed', 'completed', null])) {
+            return redirect()->to(base_url('jamaah/orders/detail/' . $idpendaftaran))->with('error', 'Surat jalan hanya bisa dicetak untuk pendaftaran yang sudah dikonfirmasi');
+        }
+
+        // Ambil daftar jamaah
+        $jamaahList = $this->detailPendaftaranModel->getJamaahByIdPendaftaran($idpendaftaran);
+
+        // Ambil data pembayaran
+        $pembayaran = $this->pembayaranModel->getPembayaranByPendaftaranId($idpendaftaran);
+
+        $data = [
+            'title' => 'Surat Jalan - ' . ucfirst($pendaftaran['namakategori']),
+            'pendaftaran' => $pendaftaran,
+            'jamaahList' => $jamaahList,
+            'pembayaran' => $pembayaran
+        ];
+
+        // Return view untuk cetak surat jalan
+        return view('admin/laporan/cetak_surat_jalan', $data);
+    }
 }

@@ -28,6 +28,9 @@
                 <button type="button" class="btn btn-primary" onclick="window.location.href='<?= base_url('admin/pendaftaran/cetak-faktur/' . $pendaftaran['idpendaftaran']) ?>'">
                     <i class="bx bx-printer me-1"></i> Cetak Faktur
                 </button>
+                <button type="button" class="btn btn-success" onclick="window.open('<?= base_url('admin/pendaftaran/cetak-surat-jalan/' . $pendaftaran['idpendaftaran']) ?>', '_blank')">
+                    <i class="bx bx-file-blank me-1"></i> Cetak Surat Jalan
+                </button>
             </div>
         </div>
     </div>

@@ -117,6 +117,7 @@ $routes->group('admin', ['filter' => 'auth:admin'], function ($routes) {
     $routes->get('get-pendaftaran', 'Admin\Admin::getPendaftaran');
     $routes->get('pendaftaran/detail/(:segment)', 'Admin\Admin::detailPendaftaran/$1');
     $routes->get('pendaftaran/cetak-faktur/(:segment)', 'Admin\Admin::cetakFakturPendaftaran/$1');
+    $routes->get('pendaftaran/cetak-surat-jalan/(:segment)', 'Admin\Admin::cetakSuratJalan/$1');
     $routes->post('konfirmasi-pembayaran', 'Admin\Admin::konfirmasiPembayaran');
     $routes->get('pembayaran', 'Admin\Admin::pembayaran');
     $routes->get('get-pembayaran', 'Admin\Admin::getPembayaran');
@@ -147,6 +148,7 @@ $routes->group('jamaah', ['filter' => 'auth'], function ($routes) {
     $routes->get('get-pendaftaran', 'Jamaah::getPendaftaran');
     $routes->get('orders/pembayaran/(:segment)', 'Jamaah::pembayaran/$1');
     $routes->get('orders/detail/(:segment)', 'Jamaah::detailOrder/$1');
+    $routes->get('orders/cetak-surat-jalan/(:segment)', 'Jamaah::cetakSuratJalan/$1');
 
     // Paket routes
     $routes->get('paket', 'Jamaah::paket');

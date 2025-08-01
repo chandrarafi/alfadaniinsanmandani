@@ -147,7 +147,7 @@
                 <th>No</th>
                 <th>ID Pembayaran</th>
                 <th>Tanggal Bayar</th>
-                <th>ID Pendaftaran</th>
+                <!-- <th>ID Pendaftaran</th> -->
                 <th>Metode</th>
                 <th>Tipe</th>
                 <th>Jumlah Bayar</th>
@@ -169,7 +169,7 @@
                         <td><?= $no++; ?></td>
                         <td><?= $item['idpembayaran']; ?></td>
                         <td><?= $item['tanggal_bayar']; ?></td>
-                        <td><?= $item['pendaftaranid']; ?></td>
+                        <!-- <td><?= $item['pendaftaranid']; ?></td> -->
                         <td><?= $item['metodepembayaran']; ?></td>
                         <td><?= $item['tipepembayaran']; ?></td>
                         <td class="text-right">Rp <?= number_format($item['jumlahbayar'], 0, ',', '.'); ?></td>
@@ -177,7 +177,7 @@
                     </tr>
                 <?php endforeach; ?>
                 <tr>
-                    <td colspan="6" class="text-center"><b>Total</b></td>
+                    <td colspan="5" class="text-center"><b>Total</b></td>
                     <td class="text-right"><b>Rp <?= number_format($total_bayar, 0, ',', '.'); ?></b></td>
                     <td></td>
                 </tr>

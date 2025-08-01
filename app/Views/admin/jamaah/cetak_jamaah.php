@@ -122,8 +122,7 @@
             <img src="<?= $logo; ?>" alt="Logo" class="logo">
             <div>
                 <div class="company-name">Haji Umroh PT.Alfadani Insan Madani</div>
-                <div class="report-title">Laporan Data Jamaah</div>
-                <div class="report-date">Tanggal: <?= $tanggal ?></div>
+                <div class="report-title">Laporan Jamaah</div>
             </div>
         </div>
     </div>
@@ -138,7 +137,7 @@
                 <th width="20%">Alamat</th>
                 <th width="15%">Email</th>
                 <th width="12%">No. HP</th>
-                <th width="9%">Status</th>
+                <!-- <th width="9%">Status</th> -->
             </tr>
         </thead>
         <tbody>
@@ -157,7 +156,7 @@
                         <td class="text-left"><?= $item['alamat']; ?></td>
                         <td class="text-left"><?= $item['emailjamaah']; ?></td>
                         <td><?= $item['nohpjamaah']; ?></td>
-                        <td><?= $item['status'] ? 'Aktif' : 'Nonaktif'; ?></td>
+                        <!-- <td><?= $item['status'] ? 'Aktif' : 'Nonaktif'; ?></td> -->
                     </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -165,7 +164,7 @@
     </table>
 
     <div class="footer">
-        <div>Kendal, <?= $tanggal ?></div>
+        <div>Padang, <?= $tanggal ?></div>
         <div class="signature">Pimpinan</div>
     </div>
 

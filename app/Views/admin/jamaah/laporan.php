@@ -24,7 +24,7 @@
                                 <th>Alamat</th>
                                 <th>Email</th>
                                 <th>No. HP</th>
-                                <th>Status</th>
+                                <!-- <th>Status</th> -->
                             </tr>
                         </thead>
                         <tbody>
@@ -38,13 +38,13 @@
                                     <td><?= $item['alamat']; ?></td>
                                     <td><?= $item['emailjamaah']; ?></td>
                                     <td><?= $item['nohpjamaah']; ?></td>
-                                    <td>
+                                    <!-- <td>
                                         <?php if ($item['status']) : ?>
                                             <span class="badge badge-success">Aktif</span>
                                         <?php else : ?>
                                             <span class="badge badge-danger">Nonaktif</span>
                                         <?php endif; ?>
-                                    </td>
+                                    </td> -->
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

@@ -90,7 +90,7 @@
                 <th>Alamat</th>
                 <th>Email</th>
                 <th>No. HP</th>
-                <th>Status</th>
+                <!-- <th>Status</th> -->
             </tr>
         </thead>
         <tbody>
@@ -109,7 +109,6 @@
                         <td><?= $item['alamat']; ?></td>
                         <td><?= $item['emailjamaah']; ?></td>
                         <td><?= $item['nohpjamaah']; ?></td>
-                        <td><?= $item['status'] ? 'Aktif' : 'Nonaktif'; ?></td>
                     </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
