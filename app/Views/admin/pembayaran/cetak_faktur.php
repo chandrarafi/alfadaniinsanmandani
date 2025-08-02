@@ -126,6 +126,26 @@
             font-weight: bold;
         }
 
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120px;
+            font-weight: bold;
+            color: rgba(34, 197, 94, 0.3);
+            z-index: 9999;
+            pointer-events: none;
+            user-select: none;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            white-space: nowrap;
+            width: 100%;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         @media print {
             body {
                 margin: 0;
@@ -143,11 +163,32 @@
             table {
                 page-break-inside: avoid;
             }
+
+            .watermark {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                font-size: 120px;
+                font-weight: bold;
+                color: rgba(34, 197, 94, 0.4);
+                z-index: 9999;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+                white-space: nowrap;
+                width: 100%;
+                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 
 <body>
+    <?php if (($pendaftaran['sisabayar'] ?? 0) <= 0): ?>
+        <div class="watermark">LUNAS</div>
+    <?php endif; ?>
     <div class="container">
         <!-- Header Faktur -->
         <div class="header">
@@ -163,8 +204,10 @@
                 <p>No. Faktur: <?= $pembayaran['idpembayaran'] ?></p>
                 <p>Tanggal: <?= date('d F Y', strtotime($pembayaran['tanggalbayar'])) ?></p>
                 <p>Status:
-                    <?php if ($pembayaran['statuspembayaran'] == 1): ?>
+                    <?php if (($pendaftaran['sisabayar'] ?? 0) <= 0): ?>
                         <span class="status-confirmed">LUNAS</span>
+                    <?php elseif ($pembayaran['statuspembayaran'] == 1): ?>
+                        <span class="status-confirmed">DIKONFIRMASI</span>
                     <?php elseif ($pembayaran['statuspembayaran'] == 2): ?>
                         <span class="status-rejected">DITOLAK</span>
                     <?php else: ?>
