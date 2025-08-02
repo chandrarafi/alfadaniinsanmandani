@@ -11,6 +11,7 @@ class Admin extends BaseController
     protected $detailPendaftaranModel;
     protected $paketModel;
     protected $pembayaranModel;
+    protected $jamaahModel;
 
     public function __construct()
     {
@@ -19,6 +20,7 @@ class Admin extends BaseController
         $this->detailPendaftaranModel = new \App\Models\DetailPendaftaranModel();
         $this->paketModel = new \App\Models\PaketModel();
         $this->pembayaranModel = new \App\Models\PembayaranModel();
+        $this->jamaahModel = new \App\Models\JamaahModel();
     }
 
     public function index(): string
@@ -1033,7 +1035,7 @@ class Admin extends BaseController
     }
 
     /**
-     * Cetak faktur pendaftaran (memanggil faktur pembayaran terakhir)
+     * Cetak faktur pendaftaran dengan riwayat semua pembayaran (untuk tombol "Cetak Faktur" di atas)
      */
     public function cetakFakturPendaftaran($idpendaftaran = null)
     {
@@ -1061,8 +1063,8 @@ class Admin extends BaseController
         // Ambil pembayaran terakhir
         $lastPayment = $pembayaran[0];
 
-        // Redirect ke halaman cetak faktur pembayaran
-        return redirect()->to(base_url('admin/faktur/' . $lastPayment['idpembayaran']));
+        // Redirect ke halaman cetak faktur index (riwayat semua pembayaran)
+        return redirect()->to(base_url('admin/cetakFakturIndex/' . $lastPayment['idpembayaran']));
     }
 
     /**

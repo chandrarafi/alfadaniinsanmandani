@@ -120,7 +120,7 @@
             <tr>
                 <th>No</th>
                 <th>Nama Paket</th>
-                <th>Kategori</th>
+                <th>Jenis Paket</th>
                 <th>Durasi Perjalanan</th>
                 <th>Harga Paket</th>
                 <th>Kapasitas</th>

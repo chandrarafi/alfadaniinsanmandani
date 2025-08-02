@@ -374,12 +374,12 @@
                                                         <button type="button" class="btn btn-sm btn-danger btn-tolak-pembayaran" data-id="<?= $bayar['idpembayaran'] ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="Tolak">
                                                             <i class="bx bx-x"></i>
                                                         </button>
-                                                        <a href="<?= base_url('admin/faktur/' . $bayar['idpembayaran']) ?>" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Lihat Faktur">
+                                                        <a href="<?= base_url('admin/cetakFakturDetail/' . $bayar['idpembayaran']) ?>" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Lihat Faktur">
                                                             <i class="bx bx-file"></i>
                                                         </a>
                                                     </div>
                                                 <?php else: ?>
-                                                    <a href="<?= base_url('admin/faktur/' . $bayar['idpembayaran']) ?>" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Lihat Faktur">
+                                                    <a href="<?= base_url('admin/cetakFakturDetail/' . $bayar['idpembayaran']) ?>" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Lihat Faktur">
                                                         <i class="bx bx-file"></i> Faktur
                                                     </a>
                                                 <?php endif; ?>
