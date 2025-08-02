@@ -93,7 +93,7 @@
                                 // Tambahkan tombol faktur jika ada pembayaran yang sudah dikonfirmasi
                                 if (item.last_payment_id) {
                                     actionButtons += `
-                                        <a href="<?= base_url('jamaah/faktur/') ?>${item.last_payment_id}" class="text-white bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-xs font-medium" target="_blank">
+                                        <a href="<?= base_url('jamaah/cetakFakturIndex/') ?>${item.last_payment_id}" class="text-white bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-xs font-medium" target="_blank">
                                             <i class="fas fa-file-invoice"></i> Faktur
                                         </a>
                                     `;
@@ -106,7 +106,7 @@
                                 // Tambahkan tombol faktur jika ada pembayaran yang sudah dikonfirmasi
                                 if (item.last_payment_id) {
                                     actionButtons += `
-                                        <a href="<?= base_url('jamaah/faktur/') ?>${item.last_payment_id}" class="text-white bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-xs font-medium" target="_blank">
+                                        <a href="<?= base_url('jamaah/cetakFakturIndex/') ?>${item.last_payment_id}" class="text-white bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-xs font-medium" target="_blank">
                                             <i class="fas fa-file-invoice"></i> Faktur
                                         </a>
                                     `;

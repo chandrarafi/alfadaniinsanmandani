@@ -6,7 +6,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h5 class="card-title mb-0">Faktur Pembayaran</h5>
             <div>
-                <a href="<?= base_url('admin/cetakFaktur/' . $pembayaran['idpembayaran']) ?>" target="_blank" class="btn btn-primary">
+                <a href="<?= base_url('admin/cetakFakturDetail/' . $pembayaran['idpembayaran']) ?>" target="_blank" class="btn btn-primary">
                     <i class="bx bx-printer me-1"></i> Cetak PDF
                 </a>
                 <a href="javascript:history.back()" class="btn btn-secondary ms-2">

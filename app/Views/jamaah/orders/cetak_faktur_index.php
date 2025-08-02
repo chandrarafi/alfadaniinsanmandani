@@ -162,15 +162,7 @@
                 <h2>FAKTUR PEMBAYARAN</h2>
                 <p>No. Faktur: <?= $pembayaran['idpembayaran'] ?></p>
                 <p>Tanggal: <?= date('d F Y', strtotime($pembayaran['tanggalbayar'])) ?></p>
-                <p>Status:
-                    <?php if ($pembayaran['statuspembayaran'] == 1): ?>
-                        <span class="status-confirmed">DIKONFIRMASI</span>
-                    <?php elseif ($pembayaran['statuspembayaran'] == 2): ?>
-                        <span class="status-rejected">DITOLAK</span>
-                    <?php else: ?>
-                        <span class="status-pending">MENUNGGU KONFIRMASI</span>
-                    <?php endif; ?>
-                </p>
+                <p>Tipe: <span class="status-confirmed">RIWAYAT LENGKAP</span></p>
             </div>
             <div class="clear"></div>
         </div>
@@ -267,52 +259,7 @@
             </tbody>
         </table>
 
-        <!-- Detail Pembayaran -->
-        <h3>Detail Pembayaran Saat Ini</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Metode Pembayaran</th>
-                    <th>Tipe Pembayaran</th>
-                    <th>Jumlah Bayar</th>
-                    <th>Tanggal Bayar</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><?= $pembayaran['metodepembayaran'] ?></td>
-                    <td><?= $pembayaran['tipepembayaran'] ?></td>
-                    <td>Rp <?= number_format($pembayaran['jumlahbayar'], 0, ',', '.') ?></td>
-                    <td><?= date('d F Y', strtotime($pembayaran['tanggalbayar'])) ?></td>
-                    <td>
-                        <?php if ($pembayaran['statuspembayaran'] == 1): ?>
-                            <span class="status-confirmed">Dikonfirmasi</span>
-                        <?php elseif ($pembayaran['statuspembayaran'] == 2): ?>
-                            <span class="status-rejected">Ditolak</span>
-                        <?php else: ?>
-                            <span class="status-pending">Menunggu Konfirmasi</span>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-
-        <?php if ($pembayaran['metodepembayaran'] !== 'Cash' && !empty($pembayaran['buktibayar'])): ?>
-            <div style="margin-top: 5px; margin-bottom: 10px;">
-                <p style="font-weight: bold; font-size: 10px; margin-bottom: 3px;">Bukti Pembayaran:</p>
-                <?php
-                $buktiPath = FCPATH . 'uploads/pembayaran/' . $pembayaran['buktibayar'];
-                if (file_exists($buktiPath)):
-                ?>
-                    <img src="<?= base_url('uploads/pembayaran/' . $pembayaran['buktibayar']) ?>" alt="Bukti Pembayaran" style="max-height: 100px; display: block; margin: 0 auto; border: 1px solid #ddd;" loading="lazy">
-                <?php else: ?>
-                    <p style="text-align: center; color: #666; font-style: italic;">File bukti pembayaran tidak ditemukan</p>
-                <?php endif; ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Riwayat Pembayaran -->
+        <!-- RIWAYAT SEMUA PEMBAYARAN (Hanya tampil di index) -->
         <h3>Riwayat Semua Pembayaran</h3>
         <table>
             <thead>
@@ -367,10 +314,6 @@
                 <span>Total Pembayaran Terkonfirmasi:</span>
                 <span>Rp <?= number_format($totalBayarKonfirmasi ?? 0, 0, ',', '.') ?></span>
             </div>
-            <div class="summary-row">
-                <span>Pembayaran Saat Ini:</span>
-                <span>Rp <?= number_format($pembayaran['jumlahbayar'] ?? 0, 0, ',', '.') ?></span>
-            </div>
             <div class="summary-row" style="font-weight: bold;">
                 <span>Sisa Pembayaran:</span>
                 <span>Rp <?= number_format($pendaftaran['sisabayar'] ?? 0, 0, ',', '.') ?></span>
@@ -380,7 +323,7 @@
         <!-- Catatan -->
         <h3>Catatan</h3>
         <div class="notes">
-            <p>1. Faktur ini adalah bukti pembayaran yang sah.</p>
+            <p>1. Faktur ini menampilkan riwayat lengkap semua pembayaran.</p>
             <p>2. Pembayaran dianggap sah setelah dikonfirmasi oleh admin.</p>
             <p>3. Untuk informasi lebih lanjut, silakan hubungi kami di <?= $companyInfo['telepon'] ?>.</p>
         </div>

@@ -125,6 +125,25 @@
             color: #ef4444;
             font-weight: bold;
         }
+
+        @media print {
+            body {
+                margin: 0;
+                padding: 10px;
+            }
+
+            .container {
+                page-break-inside: avoid;
+            }
+
+            .header {
+                page-break-inside: avoid;
+            }
+
+            table {
+                page-break-inside: avoid;
+            }
+        }
     </style>
 </head>
 
@@ -192,30 +211,36 @@
                 </tr>
             </thead>
             <tbody>
-                <?php $no = 1;
-                foreach ($jamaahList as $jamaah): ?>
-                    <tr>
-                        <td><?= $no++ ?></td>
-                        <td><?= $jamaah['namajamaah'] ?></td>
-                        <td><?= $jamaah['nik'] ?? '-' ?></td>
-                        <td>
-                            <?php
-                            if (isset($jamaah['jenkel'])) {
-                                if (strtolower($jamaah['jenkel']) == 'l') {
-                                    echo 'Laki-laki';
-                                } elseif (strtolower($jamaah['jenkel']) == 'p') {
-                                    echo 'Perempuan';
+                <?php if (!empty($jamaahList) && is_array($jamaahList)): ?>
+                    <?php $no = 1;
+                    foreach ($jamaahList as $jamaah): ?>
+                        <tr>
+                            <td><?= $no++ ?></td>
+                            <td><?= $jamaah['namajamaah'] ?? '-' ?></td>
+                            <td><?= $jamaah['nik'] ?? '-' ?></td>
+                            <td>
+                                <?php
+                                if (isset($jamaah['jenkel'])) {
+                                    if (strtolower($jamaah['jenkel']) == 'l') {
+                                        echo 'Laki-laki';
+                                    } elseif (strtolower($jamaah['jenkel']) == 'p') {
+                                        echo 'Perempuan';
+                                    } else {
+                                        echo $jamaah['jenkel'];
+                                    }
                                 } else {
-                                    echo $jamaah['jenkel'];
+                                    echo '-';
                                 }
-                            } else {
-                                echo '-';
-                            }
-                            ?>
-                        </td>
-                        <td><?= $jamaah['nohpjamaah'] ?? '-' ?></td>
+                                ?>
+                            </td>
+                            <td><?= $jamaah['nohpjamaah'] ?? '-' ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 10px;">Tidak ada data jamaah</td>
                     </tr>
-                <?php endforeach; ?>
+                <?php endif; ?>
             </tbody>
         </table>
 
@@ -236,7 +261,7 @@
                     <td><?= $pendaftaran['namapaket'] ?></td>
                     <td><?= $pendaftaran['namakategori'] ?? 'Umum' ?></td>
                     <td>Rp <?= number_format($pendaftaran['harga'], 0, ',', '.') ?></td>
-                    <td><?= count($jamaahList) ?> orang</td>
+                    <td><?= is_array($jamaahList) ? count($jamaahList) : 0 ?> orang</td>
                     <td>Rp <?= number_format($pendaftaran['totalbayar'], 0, ',', '.') ?></td>
                 </tr>
             </tbody>
@@ -276,7 +301,14 @@
         <?php if ($pembayaran['metodepembayaran'] !== 'Cash' && !empty($pembayaran['buktibayar'])): ?>
             <div style="margin-top: 5px; margin-bottom: 10px;">
                 <p style="font-weight: bold; font-size: 10px; margin-bottom: 3px;">Bukti Pembayaran:</p>
-                <img src="<?= base_url('uploads/pembayaran/' . $pembayaran['buktibayar']) ?>" alt="Bukti Pembayaran" style="max-height: 100px; display: block; margin: 0 auto; border: 1px solid #ddd;">
+                <?php
+                $buktiPath = FCPATH . 'uploads/pembayaran/' . $pembayaran['buktibayar'];
+                if (file_exists($buktiPath)):
+                ?>
+                    <img src="<?= base_url('uploads/pembayaran/' . $pembayaran['buktibayar']) ?>" alt="Bukti Pembayaran" style="max-height: 100px; display: block; margin: 0 auto; border: 1px solid #ddd;" loading="lazy">
+                <?php else: ?>
+                    <p style="text-align: center; color: #666; font-style: italic;">File bukti pembayaran tidak ditemukan</p>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
 
@@ -311,6 +343,13 @@
             <p>&copy; <?= date('Y') ?> <?= $companyInfo['nama'] ?>. Semua Hak Dilindungi.</p>
         </div>
     </div>
+
+    <script>
+        // Auto print when page loads
+        window.onload = function() {
+            window.print();
+        }
+    </script>
 </body>
 
 </html>

@@ -267,7 +267,7 @@
             </tbody>
         </table>
 
-        <!-- Detail Pembayaran -->
+        <!-- DETAIL PEMBAYARAN SAAT INI (Hanya tampil di detail) -->
         <h3>Detail Pembayaran Saat Ini</h3>
         <table>
             <thead>
@@ -298,6 +298,7 @@
             </tbody>
         </table>
 
+        <!-- BUKTI PEMBAYARAN (Hanya tampil di detail) -->
         <?php if ($pembayaran['metodepembayaran'] !== 'Cash' && !empty($pembayaran['buktibayar'])): ?>
             <div style="margin-top: 5px; margin-bottom: 10px;">
                 <p style="font-weight: bold; font-size: 10px; margin-bottom: 3px;">Bukti Pembayaran:</p>
@@ -312,60 +313,12 @@
             </div>
         <?php endif; ?>
 
-        <!-- Riwayat Pembayaran -->
-        <h3>Riwayat Semua Pembayaran</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>ID Pembayaran</th>
-                    <th>Tipe</th>
-                    <th>Jumlah</th>
-                    <th>Tanggal</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($allPembayaran) || !is_array($allPembayaran)): ?>
-                    <tr>
-                        <td colspan="6" style="text-align: center; padding: 10px;">Belum ada riwayat pembayaran</td>
-                    </tr>
-                <?php else: ?>
-                    <?php $no = 1;
-                    foreach ($allPembayaran as $bayar): ?>
-                        <?php if (isset($bayar['idpembayaran']) && isset($bayar['tipepembayaran'])): ?>
-                            <tr style="<?= ($bayar['idpembayaran'] == $pembayaran['idpembayaran']) ? 'background-color: #e6f0ff;' : '' ?>">
-                                <td><?= $no++ ?></td>
-                                <td><?= $bayar['idpembayaran'] ?></td>
-                                <td><?= $bayar['tipepembayaran'] ?></td>
-                                <td>Rp <?= number_format($bayar['jumlahbayar'] ?? 0, 0, ',', '.') ?></td>
-                                <td><?= isset($bayar['tanggalbayar']) ? date('d F Y', strtotime($bayar['tanggalbayar'])) : '-' ?></td>
-                                <td>
-                                    <?php if (($bayar['statuspembayaran'] ?? 0) == 1): ?>
-                                        <span class="status-confirmed">Dikonfirmasi</span>
-                                    <?php elseif (($bayar['statuspembayaran'] ?? 0) == 2): ?>
-                                        <span class="status-rejected">Ditolak</span>
-                                    <?php else: ?>
-                                        <span class="status-pending">Menunggu</span>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
-
         <!-- Ringkasan Pembayaran -->
         <h3>Ringkasan Pembayaran</h3>
         <div class="summary">
             <div class="summary-row">
                 <span>Total Biaya Paket:</span>
                 <span>Rp <?= number_format($pendaftaran['totalbayar'] ?? 0, 0, ',', '.') ?></span>
-            </div>
-            <div class="summary-row">
-                <span>Total Pembayaran Terkonfirmasi:</span>
-                <span>Rp <?= number_format($totalBayarKonfirmasi ?? 0, 0, ',', '.') ?></span>
             </div>
             <div class="summary-row">
                 <span>Pembayaran Saat Ini:</span>
@@ -380,7 +333,7 @@
         <!-- Catatan -->
         <h3>Catatan</h3>
         <div class="notes">
-            <p>1. Faktur ini adalah bukti pembayaran yang sah.</p>
+            <p>1. Faktur ini adalah bukti pembayaran yang sah untuk transaksi ini.</p>
             <p>2. Pembayaran dianggap sah setelah dikonfirmasi oleh admin.</p>
             <p>3. Untuk informasi lebih lanjut, silakan hubungi kami di <?= $companyInfo['telepon'] ?>.</p>
         </div>

@@ -1275,23 +1275,31 @@ class Jamaah extends BaseController
 
         // Ambil data jamaah yang terdaftar
         $jamaahList = $this->detailPendaftaranModel->getJamaahByIdPendaftaran($pembayaran['pendaftaranid']);
+        if (!$jamaahList) {
+            $jamaahList = [];
+        }
 
         // Ambil data jamaah utama (yang login)
         $jamaahUtama = $this->jamaahModel->where('userid', $userId)->first();
 
-        // Ambil semua pembayaran untuk pendaftaran ini
-        $allPembayaran = $this->pembayaranModel->where('pendaftaranid', $pembayaran['pendaftaranid'])->findAll();
+        // Ambil semua pembayaran untuk pendaftaran ini dengan limit untuk performa
+        $allPembayaran = $this->pembayaranModel->where('pendaftaranid', $pembayaran['pendaftaranid'])
+            ->orderBy('tanggalbayar', 'ASC')
+            ->limit(20)
+            ->findAll();
 
-        // Urutkan pembayaran berdasarkan tanggal
-        usort($allPembayaran, function ($a, $b) {
-            return strtotime($a['tanggalbayar']) - strtotime($b['tanggalbayar']);
-        });
+        // Pastikan allPembayaran tidak null
+        if (!$allPembayaran) {
+            $allPembayaran = [];
+        }
 
         // Hitung total pembayaran yang sudah dikonfirmasi
         $totalBayarKonfirmasi = 0;
-        foreach ($allPembayaran as $bayar) {
-            if ($bayar['statuspembayaran'] == 1) {
-                $totalBayarKonfirmasi += $bayar['jumlahbayar'];
+        if (is_array($allPembayaran)) {
+            foreach ($allPembayaran as $bayar) {
+                if (isset($bayar['statuspembayaran']) && $bayar['statuspembayaran'] == 1 && isset($bayar['jumlahbayar'])) {
+                    $totalBayarKonfirmasi += (float) $bayar['jumlahbayar'];
+                }
             }
         }
 
@@ -1319,7 +1327,7 @@ class Jamaah extends BaseController
     }
 
     /**
-     * Cetak faktur pembayaran dengan DOMPDF
+     * Cetak faktur pembayaran
      */
     public function cetakFaktur($idpembayaran = null)
     {
@@ -1354,30 +1362,38 @@ class Jamaah extends BaseController
 
         // Ambil data jamaah yang terdaftar
         $jamaahList = $this->detailPendaftaranModel->getJamaahByIdPendaftaran($pembayaran['pendaftaranid']);
+        if (!$jamaahList) {
+            $jamaahList = [];
+        }
 
         // Ambil data jamaah utama (yang login)
         $jamaahUtama = $this->jamaahModel->where('userid', $userId)->first();
 
-        // Ambil semua pembayaran untuk pendaftaran ini
-        $allPembayaran = $this->pembayaranModel->where('pendaftaranid', $pembayaran['pendaftaranid'])->findAll();
+        // Ambil semua pembayaran untuk pendaftaran ini dengan limit untuk performa
+        $allPembayaran = $this->pembayaranModel->where('pendaftaranid', $pembayaran['pendaftaranid'])
+            ->orderBy('tanggalbayar', 'ASC')
+            ->limit(20)
+            ->findAll();
 
-        // Urutkan pembayaran berdasarkan tanggal
-        usort($allPembayaran, function ($a, $b) {
-            return strtotime($a['tanggalbayar']) - strtotime($b['tanggalbayar']);
-        });
+        // Pastikan allPembayaran tidak null
+        if (!$allPembayaran) {
+            $allPembayaran = [];
+        }
 
         // Hitung total pembayaran yang sudah dikonfirmasi
         $totalBayarKonfirmasi = 0;
-        foreach ($allPembayaran as $bayar) {
-            if ($bayar['statuspembayaran'] == 1) {
-                $totalBayarKonfirmasi += $bayar['jumlahbayar'];
+        if (is_array($allPembayaran)) {
+            foreach ($allPembayaran as $bayar) {
+                if (isset($bayar['statuspembayaran']) && $bayar['statuspembayaran'] == 1 && isset($bayar['jumlahbayar'])) {
+                    $totalBayarKonfirmasi += (float) $bayar['jumlahbayar'];
+                }
             }
         }
 
         // Data perusahaan/travel (hardcoded)
         $companyInfo = [
             'nama' => 'Alfadani Insan Mandani',
-            'alamat' => 'Jakarta, Indonesia',
+            'alamat' => 'Padang, Indonesia',
             'telepon' => '021-1234567',
             'email' => 'info@alfadani.com',
             'website' => 'www.alfadani.com'
@@ -1394,27 +1410,159 @@ class Jamaah extends BaseController
             'totalBayarKonfirmasi' => $totalBayarKonfirmasi
         ];
 
-        // Inisialisasi DOMPDF
-        $dompdf = new \Dompdf\Dompdf();
-        $options = new \Dompdf\Options();
-        $options->set('isRemoteEnabled', true);
-        $dompdf->setOptions($options);
+        // Return view untuk cetak faktur (sama seperti laporan lainnya)
+        return view('jamaah/orders/cetak_faktur', $data);
+    }
 
-        // Render view ke HTML
-        $html = view('jamaah/orders/cetak_faktur', $data);
+    /**
+     * Cetak faktur dari halaman index (tampilkan riwayat semua pembayaran)
+     */
+    public function cetakFakturIndex($idpembayaran = null)
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            $this->session->set('last_page', current_url());
+            return redirect()->to('auth');
+        }
 
-        // Load HTML ke DOMPDF
-        $dompdf->loadHtml($html);
+        if (!$idpembayaran) {
+            return redirect()->to('jamaah/orders')->with('error', 'ID Pembayaran tidak valid');
+        }
 
-        // Set ukuran dan orientasi kertas
-        $dompdf->setPaper('A4', 'portrait');
+        $userId = $this->session->get('id');
 
-        // Render PDF
-        $dompdf->render();
+        // Ambil detail pembayaran
+        $pembayaran = $this->pembayaranModel->getPembayaranDetail($idpembayaran);
 
-        // Output PDF ke browser
-        $dompdf->stream('faktur-' . $idpembayaran . '.pdf', ['Attachment' => false]);
-        exit();
+        if (!$pembayaran) {
+            return redirect()->to('jamaah/orders')->with('error', 'Data pembayaran tidak ditemukan');
+        }
+
+        // Cek apakah pembayaran milik user yang sedang login
+        $pendaftaran = $this->pendaftaranModel->find($pembayaran['pendaftaranid']);
+        if (!$pendaftaran || $pendaftaran['iduser'] != $userId) {
+            return redirect()->to('jamaah/orders')->with('error', 'Anda tidak memiliki akses ke pembayaran ini');
+        }
+
+        // Ambil detail pendaftaran
+        $pendaftaranDetail = $this->pendaftaranModel->getPendaftaranDetail($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah yang terdaftar
+        $jamaahList = $this->detailPendaftaranModel->getJamaahByIdPendaftaran($pembayaran['pendaftaranid']);
+        if (!$jamaahList) {
+            $jamaahList = [];
+        }
+
+        // Ambil data jamaah utama (yang login)
+        $jamaahUtama = $this->jamaahModel->where('userid', $userId)->first();
+
+        // Ambil semua pembayaran untuk pendaftaran ini dengan limit untuk performa
+        $allPembayaran = $this->pembayaranModel->where('pendaftaranid', $pembayaran['pendaftaranid'])
+            ->orderBy('tanggalbayar', 'ASC')
+            ->limit(20)
+            ->findAll();
+
+        // Pastikan allPembayaran tidak null
+        if (!$allPembayaran) {
+            $allPembayaran = [];
+        }
+
+        // Hitung total pembayaran yang sudah dikonfirmasi
+        $totalBayarKonfirmasi = 0;
+        if (is_array($allPembayaran)) {
+            foreach ($allPembayaran as $bayar) {
+                if (isset($bayar['statuspembayaran']) && $bayar['statuspembayaran'] == 1 && isset($bayar['jumlahbayar'])) {
+                    $totalBayarKonfirmasi += (float) $bayar['jumlahbayar'];
+                }
+            }
+        }
+
+        // Data perusahaan/travel (hardcoded)
+        $companyInfo = [
+            'nama' => 'Alfadani Insan Mandani',
+            'alamat' => 'Padang, Indonesia',
+            'telepon' => '021-1234567',
+            'email' => 'info@alfadani.com',
+            'website' => 'www.alfadani.com'
+        ];
+
+        $data = [
+            'title' => 'Faktur Pembayaran - Riwayat Lengkap',
+            'pembayaran' => $pembayaran,
+            'pendaftaran' => $pendaftaranDetail,
+            'jamaahList' => $jamaahList,
+            'jamaahUtama' => $jamaahUtama,
+            'companyInfo' => $companyInfo,
+            'allPembayaran' => $allPembayaran,
+            'totalBayarKonfirmasi' => $totalBayarKonfirmasi
+        ];
+
+        // Return view khusus untuk index (tampilkan riwayat semua pembayaran)
+        return view('jamaah/orders/cetak_faktur_index', $data);
+    }
+
+    /**
+     * Cetak faktur dari halaman detail (tampilkan detail pembayaran saat ini)
+     */
+    public function cetakFakturDetail($idpembayaran = null)
+    {
+        // Cek apakah user sudah login
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'jamaah') {
+            $this->session->set('last_page', current_url());
+            return redirect()->to('auth');
+        }
+
+        if (!$idpembayaran) {
+            return redirect()->to('jamaah/orders')->with('error', 'ID Pembayaran tidak valid');
+        }
+
+        $userId = $this->session->get('id');
+
+        // Ambil detail pembayaran
+        $pembayaran = $this->pembayaranModel->getPembayaranDetail($idpembayaran);
+
+        if (!$pembayaran) {
+            return redirect()->to('jamaah/orders')->with('error', 'Data pembayaran tidak ditemukan');
+        }
+
+        // Cek apakah pembayaran milik user yang sedang login
+        $pendaftaran = $this->pendaftaranModel->find($pembayaran['pendaftaranid']);
+        if (!$pendaftaran || $pendaftaran['iduser'] != $userId) {
+            return redirect()->to('jamaah/orders')->with('error', 'Anda tidak memiliki akses ke pembayaran ini');
+        }
+
+        // Ambil detail pendaftaran
+        $pendaftaranDetail = $this->pendaftaranModel->getPendaftaranDetail($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah yang terdaftar
+        $jamaahList = $this->detailPendaftaranModel->getJamaahByIdPendaftaran($pembayaran['pendaftaranid']);
+        if (!$jamaahList) {
+            $jamaahList = [];
+        }
+
+        // Ambil data jamaah utama (yang login)
+        $jamaahUtama = $this->jamaahModel->where('userid', $userId)->first();
+
+        // Data perusahaan/travel (hardcoded)
+        $companyInfo = [
+            'nama' => 'Alfadani Insan Mandani',
+            'alamat' => 'Padang, Indonesia',
+            'telepon' => '021-1234567',
+            'email' => 'info@alfadani.com',
+            'website' => 'www.alfadani.com'
+        ];
+
+        $data = [
+            'title' => 'Faktur Pembayaran - Detail Spesifik',
+            'pembayaran' => $pembayaran,
+            'pendaftaran' => $pendaftaranDetail,
+            'jamaahList' => $jamaahList,
+            'jamaahUtama' => $jamaahUtama,
+            'companyInfo' => $companyInfo
+        ];
+
+        // Return view khusus untuk detail (tampilkan detail pembayaran saat ini)
+        return view('jamaah/orders/cetak_faktur_detail', $data);
     }
 
     /**

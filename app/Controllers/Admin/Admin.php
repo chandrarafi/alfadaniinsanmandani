@@ -835,7 +835,7 @@ class Admin extends BaseController
     }
 
     /**
-     * Cetak faktur pembayaran dengan DOMPDF
+     * Cetak faktur pembayaran
      */
     public function cetakFaktur($idpembayaran = null)
     {
@@ -901,27 +901,135 @@ class Admin extends BaseController
             'totalBayarKonfirmasi' => $totalBayarKonfirmasi
         ];
 
-        // Inisialisasi DOMPDF
-        $dompdf = new \Dompdf\Dompdf();
-        $options = new \Dompdf\Options();
-        $options->set('isRemoteEnabled', true);
-        $dompdf->setOptions($options);
+        // Return view untuk cetak faktur (sama seperti laporan lainnya)
+        return view('admin/pembayaran/cetak_faktur', $data);
+    }
 
-        // Render view ke HTML
-        $html = view('admin/pembayaran/cetak_faktur', $data);
+    /**
+     * Cetak faktur dari halaman index admin (tampilkan riwayat semua pembayaran)
+     */
+    public function cetakFakturIndex($idpembayaran = null)
+    {
+        // Cek apakah user adalah admin
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'admin') {
+            return redirect()->to(base_url('auth'));
+        }
 
-        // Load HTML ke DOMPDF
-        $dompdf->loadHtml($html);
+        if (!$idpembayaran) {
+            return redirect()->to(base_url('admin/pembayaran'))->with('error', 'ID Pembayaran tidak valid');
+        }
 
-        // Set ukuran dan orientasi kertas
-        $dompdf->setPaper('A4', 'portrait');
+        // Ambil detail pembayaran
+        $pembayaran = $this->pembayaranModel->getPembayaranDetail($idpembayaran);
 
-        // Render PDF
-        $dompdf->render();
+        if (!$pembayaran) {
+            return redirect()->to(base_url('admin/pembayaran'))->with('error', 'Data pembayaran tidak ditemukan');
+        }
 
-        // Output PDF ke browser
-        $dompdf->stream('faktur-' . $idpembayaran . '.pdf', ['Attachment' => false]);
-        exit();
+        // Ambil detail pendaftaran
+        $pendaftaran = $this->pendaftaranModel->getPendaftaranDetail($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah yang terdaftar
+        $jamaahList = $this->detailPendaftaranModel->getJamaahByIdPendaftaran($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah utama
+        $jamaahUtama = $this->jamaahModel->where('userid', $pendaftaran['iduser'])->first();
+
+        // Ambil semua pembayaran untuk pendaftaran ini dengan limit untuk performa
+        $allPembayaran = $this->pembayaranModel->where('pendaftaranid', $pembayaran['pendaftaranid'])
+            ->orderBy('tanggalbayar', 'ASC')
+            ->limit(20)
+            ->findAll();
+
+        // Pastikan allPembayaran tidak null
+        if (!$allPembayaran) {
+            $allPembayaran = [];
+        }
+
+        // Hitung total pembayaran yang sudah dikonfirmasi
+        $totalBayarKonfirmasi = 0;
+        if (is_array($allPembayaran)) {
+            foreach ($allPembayaran as $bayar) {
+                if (isset($bayar['statuspembayaran']) && $bayar['statuspembayaran'] == 1 && isset($bayar['jumlahbayar'])) {
+                    $totalBayarKonfirmasi += (float) $bayar['jumlahbayar'];
+                }
+            }
+        }
+
+        // Data perusahaan/travel (hardcoded)
+        $companyInfo = [
+            'nama' => 'Alfadani Insan Mandani',
+            'alamat' => 'Padang, Indonesia',
+            'telepon' => '021-1234567',
+            'email' => 'info@alfadani.com',
+            'website' => 'www.alfadani.com'
+        ];
+
+        $data = [
+            'title' => 'Faktur Pembayaran - Riwayat Lengkap',
+            'pembayaran' => $pembayaran,
+            'pendaftaran' => $pendaftaran,
+            'jamaahList' => $jamaahList,
+            'jamaahUtama' => $jamaahUtama,
+            'companyInfo' => $companyInfo,
+            'allPembayaran' => $allPembayaran,
+            'totalBayarKonfirmasi' => $totalBayarKonfirmasi
+        ];
+
+        // Return view khusus untuk index (tampilkan riwayat semua pembayaran)
+        return view('admin/pembayaran/cetak_faktur_index', $data);
+    }
+
+    /**
+     * Cetak faktur dari halaman detail admin (tampilkan detail pembayaran saat ini)
+     */
+    public function cetakFakturDetail($idpembayaran = null)
+    {
+        // Cek apakah user adalah admin
+        if (!$this->session->get('logged_in') || $this->session->get('role') !== 'admin') {
+            return redirect()->to(base_url('auth'));
+        }
+
+        if (!$idpembayaran) {
+            return redirect()->to(base_url('admin/pembayaran'))->with('error', 'ID Pembayaran tidak valid');
+        }
+
+        // Ambil detail pembayaran
+        $pembayaran = $this->pembayaranModel->getPembayaranDetail($idpembayaran);
+
+        if (!$pembayaran) {
+            return redirect()->to(base_url('admin/pembayaran'))->with('error', 'Data pembayaran tidak ditemukan');
+        }
+
+        // Ambil detail pendaftaran
+        $pendaftaran = $this->pendaftaranModel->getPendaftaranDetail($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah yang terdaftar
+        $jamaahList = $this->detailPendaftaranModel->getJamaahByIdPendaftaran($pembayaran['pendaftaranid']);
+
+        // Ambil data jamaah utama
+        $jamaahUtama = $this->jamaahModel->where('userid', $pendaftaran['iduser'])->first();
+
+        // Data perusahaan/travel (hardcoded)
+        $companyInfo = [
+            'nama' => 'Alfadani Insan Mandani',
+            'alamat' => 'Padang, Indonesia',
+            'telepon' => '021-1234567',
+            'email' => 'info@alfadani.com',
+            'website' => 'www.alfadani.com'
+        ];
+
+        $data = [
+            'title' => 'Faktur Pembayaran - Detail Spesifik',
+            'pembayaran' => $pembayaran,
+            'pendaftaran' => $pendaftaran,
+            'jamaahList' => $jamaahList,
+            'jamaahUtama' => $jamaahUtama,
+            'companyInfo' => $companyInfo
+        ];
+
+        // Return view khusus untuk detail (tampilkan detail pembayaran saat ini)
+        return view('admin/pembayaran/cetak_faktur_detail', $data);
     }
 
     /**

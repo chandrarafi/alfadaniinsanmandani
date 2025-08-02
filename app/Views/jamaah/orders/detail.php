@@ -175,7 +175,7 @@
                                 ?>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <a href="<?= base_url('jamaah/faktur/' . $bayar['idpembayaran']) ?>" class="text-blue-600 hover:text-blue-900" target="_blank">
+                                <a href="<?= base_url('jamaah/cetakFakturDetail/' . $bayar['idpembayaran']) ?>" class="text-blue-600 hover:text-blue-900" target="_blank">
                                     <i class="fas fa-file-invoice mr-1"></i> Lihat Faktur
                                 </a>
                             </td>

@@ -123,6 +123,8 @@ $routes->group('admin', ['filter' => 'auth:admin'], function ($routes) {
     $routes->get('get-pembayaran', 'Admin\Admin::getPembayaran');
     $routes->get('faktur/(:segment)', 'Admin\Admin::fakturPembayaran/$1');
     $routes->get('cetakFaktur/(:segment)', 'Admin\Admin::cetakFaktur/$1');
+    $routes->get('cetakFakturIndex/(:segment)', 'Admin\Admin::cetakFakturIndex/$1');
+    $routes->get('cetakFakturDetail/(:segment)', 'Admin\Admin::cetakFakturDetail/$1');
 
     // Pendaftaran Langsung routes
     $routes->get('pendaftaran/langsung', 'Admin\Admin::pendaftaranLangsung');
@@ -174,6 +176,8 @@ $routes->group('jamaah', ['filter' => 'auth'], function ($routes) {
     $routes->post('update-pendaftaran-status/(:segment)', 'Jamaah::updatePendaftaranStatus/$1');
     $routes->get('faktur/(:segment)', 'Jamaah::fakturPembayaran/$1');
     $routes->get('cetakFaktur/(:segment)', 'Jamaah::cetakFaktur/$1');
+    $routes->get('cetakFakturIndex/(:segment)', 'Jamaah::cetakFakturIndex/$1');
+    $routes->get('cetakFakturDetail/(:segment)', 'Jamaah::cetakFakturDetail/$1');
 
     // Jamaah Referensi routes
     $routes->get('referensi', 'Jamaah::jamaahReferensi');

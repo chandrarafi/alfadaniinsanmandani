@@ -244,8 +244,8 @@ class Laporan extends BaseController
     // Method untuk AJAX jika masih dibutuhkan
     public function getPaketData()
     {
-        // Cek apakah user adalah admin
-        if (!session()->get('logged_in') || session()->get('role') !== 'admin') {
+        // Cek apakah user adalah admin atau pimpinan
+        if (!session()->get('logged_in') || !in_array(session()->get('role'), ['admin', 'pimpinan'])) {
             return $this->response->setJSON(['status' => false, 'message' => 'Akses tidak valid']);
         }
 
@@ -268,8 +268,8 @@ class Laporan extends BaseController
 
     public function exportPaketPDF()
     {
-        // Cek apakah user adalah admin
-        if (!session()->get('logged_in') || session()->get('role') !== 'admin') {
+        // Cek apakah user adalah admin atau pimpinan
+        if (!session()->get('logged_in') || !in_array(session()->get('role'), ['admin', 'pimpinan'])) {
             return redirect()->to(base_url('auth'));
         }
 
