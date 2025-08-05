@@ -62,16 +62,9 @@
                             <form action="<?= base_url('admin/laporan/pembayaran/harian') ?>" method="post" target="_blank">
                                 <div class="row mb-3">
                                     <div class="col-md-4">
-                                        <label class="form-label">Tanggal Awal</label>
+                                        <label class="form-label">Pilih Tanggal</label>
                                         <div class="input-group">
-                                            <input type="date" name="tanggal_awal" class="form-control" required>
-                                            <span class="input-group-text"><i class='bx bx-calendar'></i></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Tanggal Akhir</label>
-                                        <div class="input-group">
-                                            <input type="date" name="tanggal_akhir" class="form-control" required>
+                                            <input type="date" name="tanggal" class="form-control" required>
                                             <span class="input-group-text"><i class='bx bx-calendar'></i></span>
                                         </div>
                                     </div>

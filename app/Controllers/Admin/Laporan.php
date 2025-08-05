@@ -42,21 +42,19 @@ class Laporan extends BaseController
     // Proses laporan pendaftaran harian
     public function pendaftaranHarian()
     {
-        $tanggal_awal = $this->request->getPost('tanggal_awal');
-        $tanggal_akhir = $this->request->getPost('tanggal_akhir');
+        $tanggal = $this->request->getPost('tanggal');
 
-        if (!$tanggal_awal || !$tanggal_akhir) {
+        if (!$tanggal) {
             session()->setFlashdata('error', 'Tanggal tidak valid');
             return redirect()->back();
         }
 
-        // Query pendaftaran berdasarkan rentang tanggal
-        $pendaftaran = $this->getPendaftaranByDate($tanggal_awal, $tanggal_akhir);
+        // Query pendaftaran berdasarkan tanggal
+        $pendaftaran = $this->getPendaftaranBySingleDate($tanggal);
 
         $data = [
             'pendaftaran' => $pendaftaran,
-            'tanggal_awal' => date('d/m/Y', strtotime($tanggal_awal)),
-            'tanggal_akhir' => date('d/m/Y', strtotime($tanggal_akhir))
+            'tanggal' => date('d/m/Y', strtotime($tanggal))
         ];
 
         return view('admin/laporan/cetak_pendaftaran_harian', $data);
@@ -133,6 +131,27 @@ class Laporan extends BaseController
         ];
 
         return view('admin/laporan/cetak_pendaftaran_tahunan', $data);
+    }
+
+    // Helper: Get pendaftaran by single date
+    private function getPendaftaranBySingleDate($tanggal)
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table('pendaftaran p');
+        $builder->select('p.idpendaftaran as id_pendaftaran, DATE_FORMAT(p.tanggaldaftar, "%d/%m/%Y") as tanggal_daftar, 
+                          GROUP_CONCAT(DISTINCT j.namajamaah SEPARATOR ", ") as nama_jamaah, 
+                          pk.namapaket as nama_paket, 
+                          COALESCE(SUM(pb.jumlahbayar), 0) as total_bayar, 
+                          (p.totalbayar - COALESCE(SUM(pb.jumlahbayar), 0)) as sisa');
+        $builder->join('detail_pendaftaran dp', 'dp.idpendaftaran = p.idpendaftaran', 'left');
+        $builder->join('jamaah j', 'j.idjamaah = dp.jamaahid', 'left');
+        $builder->join('paket pk', 'pk.idpaket = p.paketid', 'left');
+        $builder->join('pembayaran pb', 'pb.pendaftaranid = p.idpendaftaran AND pb.statuspembayaran = 1', 'left');
+        $builder->where('DATE(p.tanggaldaftar)', $tanggal);
+        $builder->groupBy('p.idpendaftaran, p.tanggaldaftar, pk.namapaket, p.totalbayar');
+        $builder->orderBy('p.tanggaldaftar', 'ASC');
+
+        return $builder->get()->getResultArray();
     }
 
     // Helper: Get pendaftaran by date range
@@ -337,21 +356,19 @@ class Laporan extends BaseController
     // Proses laporan pembayaran harian
     public function pembayaranHarian()
     {
-        $tanggal_awal = $this->request->getPost('tanggal_awal');
-        $tanggal_akhir = $this->request->getPost('tanggal_akhir');
+        $tanggal = $this->request->getPost('tanggal');
 
-        if (!$tanggal_awal || !$tanggal_akhir) {
+        if (!$tanggal) {
             session()->setFlashdata('error', 'Tanggal tidak valid');
             return redirect()->back();
         }
 
-        // Query pembayaran berdasarkan rentang tanggal
-        $pembayaran = $this->getPembayaranByDate($tanggal_awal, $tanggal_akhir);
+        // Query pembayaran berdasarkan tanggal
+        $pembayaran = $this->getPembayaranBySingleDate($tanggal);
 
         $data = [
             'pembayaran' => $pembayaran,
-            'tanggal_awal' => date('d/m/Y', strtotime($tanggal_awal)),
-            'tanggal_akhir' => date('d/m/Y', strtotime($tanggal_akhir))
+            'tanggal' => date('d/m/Y', strtotime($tanggal))
         ];
 
         return view('admin/laporan/cetak_pembayaran_harian', $data);
@@ -428,6 +445,28 @@ class Laporan extends BaseController
         ];
 
         return view('admin/laporan/cetak_pembayaran_tahunan', $data);
+    }
+
+    // Helper: Get pembayaran by single date
+    private function getPembayaranBySingleDate($tanggal)
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table('pembayaran pb');
+        $builder->select('pb.idpembayaran, pb.pendaftaranid, DATE_FORMAT(pb.tanggalbayar, "%d/%m/%Y") as tanggal_bayar, 
+                          pb.metodepembayaran, pb.tipepembayaran, pb.jumlahbayar, 
+                          pb.statuspembayaran');
+        $builder->where('DATE(pb.tanggalbayar)', $tanggal);
+        $builder->orderBy('pb.tanggalbayar', 'ASC');
+
+        $result = $builder->get()->getResultArray();
+
+        // Proses status pembayaran
+        foreach ($result as &$row) {
+            $row['status'] = ($row['statuspembayaran'] == 1) ? 'Dikonfirmasi' : 'Pending';
+            unset($row['statuspembayaran']); // Hapus kolom asli
+        }
+
+        return $result;
     }
 
     // Helper: Get pembayaran by date range

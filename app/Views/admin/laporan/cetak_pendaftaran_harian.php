@@ -134,7 +134,7 @@
     </div>
 
     <div class="filter-info">
-        Tanggal: <?= $tanggal_awal ?> s/d <?= $tanggal_akhir ?>
+        Tanggal: <?= $tanggal ?>
     </div>
 
     <table class="content-table">

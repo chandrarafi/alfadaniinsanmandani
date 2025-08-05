@@ -150,43 +150,48 @@
             </tr>
         </thead>
         <tbody>
-            <?php if (empty($pembayaran)): ?>
-                <tr>
-                    <td colspan="3" class="text-center">Tidak ada data pembayaran</td>
-                </tr>
-                <?php else:
-                $no = 1;
-                $total_bayar = 0;
+            <?php
+            $bulan_list = [
+                1 => 'Januari',
+                2 => 'Februari',
+                3 => 'Maret',
+                4 => 'April',
+                5 => 'Mei',
+                6 => 'Juni',
+                7 => 'Juli',
+                8 => 'Agustus',
+                9 => 'September',
+                10 => 'Oktober',
+                11 => 'November',
+                12 => 'Desember'
+            ];
 
-                $bulan_list = [
-                    1 => 'Januari',
-                    2 => 'Februari',
-                    3 => 'Maret',
-                    4 => 'April',
-                    5 => 'Mei',
-                    6 => 'Juni',
-                    7 => 'Juli',
-                    8 => 'Agustus',
-                    9 => 'September',
-                    10 => 'Oktober',
-                    11 => 'November',
-                    12 => 'Desember'
-                ];
+            // Konversi data pembayaran ke array yang diindeks berdasarkan bulan
+            $pembayaran_per_bulan = [];
+            if (!empty($pembayaran)) {
+                foreach ($pembayaran as $item) {
+                    $pembayaran_per_bulan[$item['bulan']] = $item['total_bayar'];
+                }
+            }
 
-                foreach ($pembayaran as $item):
-                    $total_bayar += $item['total_bayar'];
-                ?>
-                    <tr>
-                        <td><?= $no++; ?></td>
-                        <td><?= $bulan_list[$item['bulan']]; ?></td>
-                        <td class="text-right">Rp <?= number_format($item['total_bayar'], 0, ',', '.'); ?></td>
-                    </tr>
-                <?php endforeach; ?>
+            $total_bayar = 0;
+            $no = 1;
+
+            // Loop untuk semua bulan (1-12)
+            for ($bulan = 1; $bulan <= 12; $bulan++):
+                $nilai_bayar = isset($pembayaran_per_bulan[$bulan]) ? $pembayaran_per_bulan[$bulan] : 0;
+                $total_bayar += $nilai_bayar;
+            ?>
                 <tr>
-                    <td colspan="2" class="text-center"><b>Total</b></td>
-                    <td class="text-right"><b>Rp <?= number_format($total_bayar, 0, ',', '.'); ?></b></td>
+                    <td><?= $no++; ?></td>
+                    <td><?= $bulan_list[$bulan]; ?></td>
+                    <td class="text-right">Rp <?= number_format($nilai_bayar, 0, ',', '.'); ?></td>
                 </tr>
-            <?php endif; ?>
+            <?php endfor; ?>
+            <tr>
+                <td colspan="2" class="text-center"><b>Total</b></td>
+                <td class="text-right"><b>Rp <?= number_format($total_bayar, 0, ',', '.'); ?></b></td>
+            </tr>
         </tbody>
     </table>
 

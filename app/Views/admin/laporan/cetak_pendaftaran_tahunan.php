@@ -141,43 +141,48 @@
             </tr>
         </thead>
         <tbody>
-            <?php if (empty($pendaftaran)): ?>
-                <tr>
-                    <td colspan="3" class="text-center">Tidak ada data pendaftaran</td>
-                </tr>
-                <?php else:
-                $no = 1;
-                $total_pendaftar = 0;
+            <?php
+            $bulan_list = [
+                1 => 'Januari',
+                2 => 'Februari',
+                3 => 'Maret',
+                4 => 'April',
+                5 => 'Mei',
+                6 => 'Juni',
+                7 => 'Juli',
+                8 => 'Agustus',
+                9 => 'September',
+                10 => 'Oktober',
+                11 => 'November',
+                12 => 'Desember'
+            ];
 
-                $bulan_list = [
-                    1 => 'Januari',
-                    2 => 'Februari',
-                    3 => 'Maret',
-                    4 => 'April',
-                    5 => 'Mei',
-                    6 => 'Juni',
-                    7 => 'Juli',
-                    8 => 'Agustus',
-                    9 => 'September',
-                    10 => 'Oktober',
-                    11 => 'November',
-                    12 => 'Desember'
-                ];
+            // Konversi data pendaftaran ke array yang diindeks berdasarkan bulan
+            $pendaftaran_per_bulan = [];
+            if (!empty($pendaftaran)) {
+                foreach ($pendaftaran as $item) {
+                    $pendaftaran_per_bulan[$item['bulan']] = $item['jumlah_pendaftar'];
+                }
+            }
 
-                foreach ($pendaftaran as $item):
-                    $total_pendaftar += $item['jumlah_pendaftar'];
-                ?>
-                    <tr>
-                        <td><?= $no++; ?></td>
-                        <td><?= $bulan_list[$item['bulan']]; ?></td>
-                        <td><?= $item['jumlah_pendaftar']; ?> orang</td>
-                    </tr>
-                <?php endforeach; ?>
+            $total_pendaftar = 0;
+            $no = 1;
+
+            // Loop untuk semua bulan (1-12)
+            for ($bulan = 1; $bulan <= 12; $bulan++):
+                $jumlah_pendaftar = isset($pendaftaran_per_bulan[$bulan]) ? $pendaftaran_per_bulan[$bulan] : 0;
+                $total_pendaftar += $jumlah_pendaftar;
+            ?>
                 <tr>
-                    <td colspan="2" class="text-center"><b>Total</b></td>
-                    <td><b><?= $total_pendaftar; ?> orang</b></td>
+                    <td><?= $no++; ?></td>
+                    <td><?= $bulan_list[$bulan]; ?></td>
+                    <td><?= $jumlah_pendaftar; ?> orang</td>
                 </tr>
-            <?php endif; ?>
+            <?php endfor; ?>
+            <tr>
+                <td colspan="2" class="text-center"><b>Total</b></td>
+                <td><b><?= $total_pendaftar; ?> orang</b></td>
+            </tr>
         </tbody>
     </table>
 
